@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace muqsit\arithmexp\expression\optimizer;
 
+use InvalidArgumentException;
 use muqsit\arithmexp\expression\ConstantExpression;
 use muqsit\arithmexp\expression\Expression;
 use muqsit\arithmexp\expression\RawExpression;
@@ -23,11 +24,9 @@ use muqsit\arithmexp\token\BinaryOperatorToken;
 use muqsit\arithmexp\token\OpcodeToken;
 use muqsit\arithmexp\token\UnaryOperatorToken;
 use muqsit\arithmexp\Util;
-use RuntimeException;
 use function array_filter;
 use function array_splice;
 use function count;
-use function gettype;
 use function is_array;
 use function is_float;
 use function is_int;
@@ -140,11 +139,11 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	 * @return bool
 	 */
 	private function valueEquals(array $tokens, int $value) : bool{
-		return count($tokens) === 1 && $tokens[0] instanceof NumericLiteralExpressionToken && match(gettype($tokens[0]->value)){
-			"integer" => $value === $tokens[0]->value,
-			"double" => (float) $value === $tokens[0]->value,
-			default => throw new RuntimeException("Unexpected numeric literal type: " . gettype($tokens[0]->value))
-		};
+		if(count($tokens) !== 1 || !($tokens[0] instanceof NumericLiteralExpressionToken)){
+			return false;
+		}
+		$actual = $tokens[0]->value;
+		return is_int($actual) ? $value === $actual : (float) $value === $actual;
 	}
 
 	/**
@@ -188,7 +187,8 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 		$symbol = OpcodeToken::opcodeToString($code);
 		return match($code){
 			OpcodeToken::OP_BINARY_ADD, OpcodeToken::OP_BINARY_DIV, OpcodeToken::OP_BINARY_EXP, OpcodeToken::OP_BINARY_MOD, OpcodeToken::OP_BINARY_MUL, OpcodeToken::OP_BINARY_SUB => new OpcodeExpressionToken($position, $code, new BinaryOperatorToken($position, $manager->binary_registry->get($symbol)->getSymbol())),
-			OpcodeToken::OP_UNARY_NOT, OpcodeToken::OP_UNARY_NVE, OpcodeToken::OP_UNARY_PVE => new OpcodeExpressionToken($position, $code, new UnaryOperatorToken($position, $manager->unary_registry->get($symbol)->getSymbol()))
+			OpcodeToken::OP_UNARY_NOT, OpcodeToken::OP_UNARY_NVE, OpcodeToken::OP_UNARY_PVE => new OpcodeExpressionToken($position, $code, new UnaryOperatorToken($position, $manager->unary_registry->get($symbol)->getSymbol())),
+			default => throw new InvalidArgumentException("Unsupported operator code {$code}")
 		};
 	}
 

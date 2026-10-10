@@ -106,7 +106,7 @@ final class Parser{
 			unset($value);
 		}
 
-		$result = new RawExpression($expression, iterator_to_array($state->toExpressionTokens()));
+		$result = new RawExpression($expression, iterator_to_array($state->toExpressionTokens(), false));
 		do{
 			$tokens_before = $result->getPostfixExpressionTokens();
 			foreach($this->expression_optimizer_registry->getRegistered() as $optimizer){
@@ -122,6 +122,7 @@ final class Parser{
 	 *
 	 * @param string $expression
 	 * @param list<Token> $tokens
+	 * @param-out list<Token|list<Token>> $tokens
 	 * @throws ParseException
 	 */
 	public function processTokens(string $expression, array &$tokens) : void{
