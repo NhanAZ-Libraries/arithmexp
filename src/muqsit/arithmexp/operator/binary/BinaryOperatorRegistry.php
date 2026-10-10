@@ -75,7 +75,7 @@ final class BinaryOperatorRegistry{
 			static fn(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, array $args) : array => [...$args, new OpcodeToken($token->getPos(), OpcodeToken::OP_BINARY_IDENTICAL, $token)]
 		)));
 		$registry->register(new SimpleBinaryOperator("!==", "Not identical", OperatorPrecedence::COMPARISON_EQUALITY, NonAssociativeOperatorAssignment::instance(), new MacroFunctionInfo(
-			SimpleFunctionInfo::from(static fn(int|float|bool $x, int|float|bool $y) : bool => $x === $y, FunctionFlags::DETERMINISTIC | FunctionFlags::COMMUTATIVE),
+			SimpleFunctionInfo::from(static fn(int|float|bool $x, int|float|bool $y) : bool => $x !== $y, FunctionFlags::DETERMINISTIC | FunctionFlags::COMMUTATIVE),
 			static fn(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, array $args) : array => [...$args, new OpcodeToken($token->getPos(), OpcodeToken::OP_BINARY_IDENTICAL_NOT, $token)]
 		)));
 		$registry->register(new SimpleBinaryOperator("<=>", "Spaceship", OperatorPrecedence::COMPARISON_EQUALITY, NonAssociativeOperatorAssignment::instance(), new MacroFunctionInfo(

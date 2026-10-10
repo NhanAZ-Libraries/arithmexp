@@ -59,8 +59,10 @@ final class ExpressionTest extends TestCase{
 		self::assertTrue($this->parser->parse("is_nan(fdiv(0, 0))")->evaluate());
 		self::assertFalse($this->parser->parse("fdiv(0, 0) === nan")->evaluate());
 		self::assertFalse($this->parser->parse("fdiv(0, 0) === nan")->evaluate());
-		self::assertFalse($this->parser->parse("fdiv(0, 0) !== nan")->evaluate());
-		self::assertFalse($this->parser->parse("fdiv(0, 0) !== nan")->evaluate());
+		self::assertTrue($this->parser->parse("fdiv(0, 0) !== nan")->evaluate());
+		self::assertTrue($this->parser->parse("1 !== 2")->evaluate());
+		self::assertFalse($this->parser->parse("1 !== 1")->evaluate());
+		self::assertTrue($this->parser->parse("x !== y")->evaluate(["x" => 1, "y" => 2]));
 
 		self::assertTrue($this->parser->parse("is_infinite(inf)")->evaluate());
 		self::assertTrue($this->parser->parse("inf == inf")->evaluate());

@@ -1,17 +1,18 @@
-name: Validate arithmexp package and run tests
+name: Test and analyze arithmexp package
 
 on:
   push:
     branches: ["master"]
   pull_request:
     branches: ["master"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   phpunit:
-    name: Validate Composer package and run PHPUnit
+    name: Validate package, test, and analyze parser
     runs-on: ubuntu-24.04
     steps:
     - name: Check out arithmexp source
@@ -27,3 +28,6 @@ jobs:
 
     - name: Run upstream PHPUnit suite
       run: ./vendor/bin/phpunit tests --testdox
+
+    - name: Analyze parser source with PHPStan at maximum level
+      run: ./vendor/bin/phpstan analyse --level=max --no-progress src
