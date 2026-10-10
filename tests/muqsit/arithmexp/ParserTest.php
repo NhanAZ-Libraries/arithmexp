@@ -61,6 +61,14 @@ final class ParserTest extends TestCase{
 		TestUtil::assertParserThrows($this->parser, "( )", ParseException::ERR_EXPR_EMPTY, 0, 3);
 	}
 
+	public function testEmptyParenthesesCannotBecomeOperatorOperands() : void{
+		TestUtil::assertParserThrows($this->uo_parser, "+()+x", ParseException::ERR_NO_OPERAND_UNARY, 0, 1);
+		TestUtil::assertParserThrows($this->uo_parser, "x+()", ParseException::ERR_NO_OPERAND_BINARY_RIGHT, 1, 2);
+		TestUtil::assertParserThrows($this->uo_parser, "()+x", ParseException::ERR_NO_OPERAND_BINARY_LEFT, 2, 3);
+		TestUtil::assertParserThrows($this->uo_parser, "(+)+x", ParseException::ERR_NO_OPERAND_UNARY, 1, 2);
+		self::assertEquals(M_PI, $this->uo_parser->parse("pi()")->evaluate());
+	}
+
 	public function testNumericLiteralWithLeadingDot() : void{
 		$expression = $this->parser->parse("x + .1 + y");
 		self::assertEquals(0.1, $expression->evaluate(["x" => 0, "y" => 0]));
@@ -202,6 +210,7 @@ final class ParserTest extends TestCase{
 
 	public function testNoUnaryOperand() : void{
 		TestUtil::assertParserThrows($this->parser, "x*+", ParseException::ERR_NO_OPERAND_UNARY, 2, 3);
+		TestUtil::assertParserThrows($this->uo_parser, "sin(+,)", ParseException::ERR_NO_OPERAND_UNARY, 4, 5);
 	}
 
 	public function testNoBinaryLeftOperand() : void{
@@ -210,6 +219,7 @@ final class ParserTest extends TestCase{
 
 	public function testNoBinaryRightOperand() : void{
 		TestUtil::assertParserThrows($this->parser, "2*", ParseException::ERR_NO_OPERAND_BINARY_RIGHT, 1, 2);
+		TestUtil::assertParserThrows($this->uo_parser, "sin(1+,)", ParseException::ERR_NO_OPERAND_BINARY_RIGHT, 5, 6);
 	}
 
 	public function testOperatorNonAssociativity() : void{

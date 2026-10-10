@@ -184,6 +184,36 @@ final class Parser{
 				break;
 			}
 
+			$previous = $tokens[$i - 1] ?? null;
+			if($group === [] && !($previous instanceof FunctionCallToken)){
+				if(count($tokens) === 2){
+					throw ParseException::emptyExpression($expression);
+				}
+				if($previous instanceof UnaryOperatorToken){
+					throw ParseException::noUnaryOperand($expression, $previous->getPos());
+				}
+				if($previous instanceof BinaryOperatorToken){
+					throw ParseException::noBinaryOperandRight($expression, $previous->getPos());
+				}
+				$next = $tokens[$j + 1] ?? null;
+				if($next instanceof BinaryOperatorToken){
+					throw ParseException::noBinaryOperandLeft($expression, $next->getPos());
+				}
+				throw ParseException::unexpectedToken($expression, $token);
+			}
+			if(count($group) === 1){
+				$member = $group[0];
+				if($member instanceof UnaryOperatorToken){
+					throw ParseException::noUnaryOperand($expression, $member->getPos());
+				}
+				if($member instanceof BinaryOperatorToken){
+					throw ParseException::noBinaryOperandLeft($expression, $member->getPos());
+				}
+				if($member instanceof FunctionCallArgumentSeparatorToken){
+					throw ParseException::unexpectedToken($expression, $member);
+				}
+			}
+
 			array_splice($tokens, $i, 1 + ($j - $i), match(count($group)){
 				0 => [],
 				1 => $group,
@@ -233,6 +263,17 @@ final class Parser{
 								$entry[$index + 1] ?? throw ParseException::noUnaryOperand($expression, $token->getPos())
 							]]
 						};
+						if($token instanceof UnaryOperatorToken && $replacement[1] instanceof FunctionCallArgumentSeparatorToken){
+							throw ParseException::noUnaryOperand($expression, $token->getPos());
+						}
+						if($token instanceof BinaryOperatorToken){
+							if($replacement[0] instanceof FunctionCallArgumentSeparatorToken){
+								throw ParseException::noBinaryOperandLeft($expression, $token->getPos());
+							}
+							if(($replacement[2] ?? null) instanceof FunctionCallArgumentSeparatorToken){
+								throw ParseException::noBinaryOperandRight($expression, $token->getPos());
+							}
+						}
 
 						$operator_tokens = array_filter($replacement, static fn(Token|array $sub_token) : bool => $sub_token !== $token && (
 							$sub_token instanceof BinaryOperatorToken ||
