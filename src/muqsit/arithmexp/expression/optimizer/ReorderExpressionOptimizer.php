@@ -14,8 +14,8 @@ use muqsit\arithmexp\function\FunctionFlags;
 use muqsit\arithmexp\Parser;
 use muqsit\arithmexp\Util;
 use function array_key_last;
+use function array_splice;
 use function count;
-use function is_array;
 use function usort;
 
 final class ReorderExpressionOptimizer implements ExpressionOptimizer{
@@ -25,15 +25,15 @@ final class ReorderExpressionOptimizer implements ExpressionOptimizer{
 
 	public function run(Parser $parser, Expression $expression) : Expression{
 		$postfix_expression_tokens = $expression->getPostfixExpressionTokens();
-		$tree = Util::expressionTokenArrayToTree($parser, $postfix_expression_tokens);
+		$tree = ExpressionTokenTree::fromPostfix($parser, $postfix_expression_tokens);
 		$changed = false;
-		foreach(Util::traverseNestedArray($tree) as &$entry){
-			$index = array_key_last($entry);
-			if($index === null || !($entry[$index] instanceof ExpressionToken)){
+		foreach($tree->traversePostOrder() as $entry){
+			$index = array_key_last($entry->items);
+			if($index === null || !($entry->items[$index] instanceof ExpressionToken)){
 				continue;
 			}
 
-			$token = Util::asFunctionCallExpressionToken($parser, $entry[$index]);
+			$token = Util::asFunctionCallExpressionToken($parser, $entry->items[$index]);
 			if($token === null){
 				continue;
 			}
@@ -42,38 +42,39 @@ final class ReorderExpressionOptimizer implements ExpressionOptimizer{
 				continue;
 			}
 
-			$updated = $entry;
-			Util::flattenArray($updated, static function(array $e) use($parser, $token) : bool{
-				if(count($e) <= 2){
-					return false;
+			$updated = $entry->items;
+			for($i = 0; $i < count($updated); ++$i){
+				$child = $updated[$i];
+				if(!($child instanceof ExpressionTokenTree) || count($child->items) <= 2){
+					continue;
 				}
-				$index = array_key_last($e);
-				if(!($e[$index] instanceof ExpressionToken)){
-					return false;
+				$last = $child->items[count($child->items) - 1];
+				if(!($last instanceof ExpressionToken)){
+					continue;
 				}
-				$other_token = Util::asFunctionCallExpressionToken($parser, $e[$index]);
-				return $other_token !== null &&
-					($other_token->flags & FunctionFlags::COMMUTATIVE) > 0 &&
-					$other_token->function === $token->function;
-			});
-			usort($updated, fn(ExpressionToken|array $a, ExpressionToken|array $b) : int => match(true){
-				is_array($a) => is_array($b) ? 0 : -1,
-				is_array($b) => 1,
+				$other_token = Util::asFunctionCallExpressionToken($parser, $last);
+				if($other_token === null || ($other_token->flags & FunctionFlags::COMMUTATIVE) === 0 || $other_token->function !== $token->function){
+					continue;
+				}
+				array_splice($updated, $i, 1, $child->items);
+				--$i;
+			}
+			usort($updated, fn(ExpressionToken|ExpressionTokenTree $a, ExpressionToken|ExpressionTokenTree $b) : int => match(true){
+				$a instanceof ExpressionTokenTree => $b instanceof ExpressionTokenTree ? 0 : -1,
+				$b instanceof ExpressionTokenTree => 1,
 				default => $this->compare(Util::asFunctionCallExpressionToken($parser, $a) ?? $a, Util::asFunctionCallExpressionToken($parser, $b) ?? $b)
 			});
-			if($updated !== $entry){
-				$entry = $updated;
+			if($updated !== $entry->items){
+				$entry->items = $updated;
 				$changed = true;
 			}
 		}
 
-		unset($entry);
 		if(!$changed){
 			return $expression;
 		}
 
-		Util::flattenArray($tree);
-		return new RawExpression($expression->getExpression(), $tree);
+		return new RawExpression($expression->getExpression(), $tree->flatten());
 	}
 
 	/**

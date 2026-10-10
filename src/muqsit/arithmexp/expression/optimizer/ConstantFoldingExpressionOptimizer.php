@@ -75,13 +75,13 @@ final class ConstantFoldingExpressionOptimizer implements ExpressionOptimizer{
 			);
 		}
 
-		$postfix_expression_token_tree = Util::expressionTokenArrayToTree($parser, $postfix_expression_tokens);
+		$postfix_expression_token_tree = ExpressionTokenTree::fromPostfix($parser, $postfix_expression_tokens);
 		$changes = 0;
 		do{
 			$found = false;
-			foreach(Util::traverseNestedArray($postfix_expression_token_tree) as &$entry){
-				for($i = count($entry) - 1; $i >= 0; --$i){
-					$token = $entry[$i];
+			foreach($postfix_expression_token_tree->traversePostOrder() as $entry){
+				for($i = count($entry->items) - 1; $i >= 0; --$i){
+					$token = $entry->items[$i];
 					if(!($token instanceof ExpressionToken)){
 						continue;
 					}
@@ -91,9 +91,7 @@ final class ConstantFoldingExpressionOptimizer implements ExpressionOptimizer{
 						continue;
 					}
 
-					$arg_tokens = array_slice($entry, $i - $token->argument_count, $token->argument_count);
-					Util::flattenArray($arg_tokens);
-					/** @var list<ExpressionToken> $arg_tokens */
+					$arg_tokens = (new ExpressionTokenTree(array_slice($entry->items, $i - $token->argument_count, $token->argument_count)))->flatten();
 
 					$value = self::evaluateDeterministicTokens($parser, $expression, $token, $arg_tokens);
 					if($value === null){
@@ -105,20 +103,18 @@ final class ConstantFoldingExpressionOptimizer implements ExpressionOptimizer{
 						? [new BooleanLiteralExpressionToken($position, $value)]
 						: [new NumericLiteralExpressionToken($position, $value)];
 
-					array_splice($entry, $i - $token->argument_count, 1 + $token->argument_count, $replacement);
+					array_splice($entry->items, $i - $token->argument_count, 1 + $token->argument_count, $replacement);
 					$i -= $token->argument_count;
 					$found = true;
 					++$changes;
 				}
 			}
-			unset($entry);
 		}while($found);
 
 		if($changes === 0){
 			return $expression;
 		}
 
-		Util::flattenArray($postfix_expression_token_tree);
-		return new RawExpression($expression->getExpression(), $postfix_expression_token_tree);
+		return new RawExpression($expression->getExpression(), $postfix_expression_token_tree->flatten());
 	}
 }

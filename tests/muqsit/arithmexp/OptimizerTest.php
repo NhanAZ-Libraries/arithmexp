@@ -7,6 +7,7 @@ namespace muqsit\arithmexp;
 use Closure;
 use muqsit\arithmexp\expression\ConstantExpression;
 use muqsit\arithmexp\expression\RawExpression;
+use muqsit\arithmexp\expression\optimizer\ExpressionTokenTree;
 use muqsit\arithmexp\expression\token\ExpressionToken;
 use muqsit\arithmexp\expression\token\NumericLiteralExpressionToken;
 use muqsit\arithmexp\function\SimpleFunctionInfo;
@@ -465,6 +466,17 @@ final class OptimizerTest extends TestCase{
 		$actual = $this->parser->parse("ceil(ceil(ceil(mt_rand(1, 2))))");
 		$expected = $this->unoptimized_parser->parse("ceil(mt_rand(1, 2))");
 		TestUtil::assertExpressionsEqual($expected, $actual);
+	}
+
+	public function testExpressionTokenTreeTraversesDeepNestingWithoutRecursion() : void{
+		$token = new NumericLiteralExpressionToken(new Position(0, 1), 7);
+		$tree = new ExpressionTokenTree([$token]);
+		for($i = 0; $i < 512; ++$i){
+			$tree = new ExpressionTokenTree([$tree]);
+		}
+
+		self::assertSame([$token], $tree->flatten());
+		self::assertCount(513, iterator_to_array($tree->traversePostOrder(), false));
 	}
 
 	public function testIdempotenceFoldingForSingleArgumentFunctionWithoutCommutativity() : void{
