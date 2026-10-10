@@ -180,7 +180,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	 */
 	private function processUnaryExpression(Parser $parser, OpcodeExpressionToken $operator_token, array $operand) : ?array{
 		return match($operator_token->code){
-			OpcodeToken::OP_UNARY_PVE => $operand,
 			OpcodeToken::OP_UNARY_NVE => [
 				new NumericLiteralExpressionToken($operator_token->getPos(), -1),
 				...$operand,

@@ -445,10 +445,12 @@ final class OptimizerTest extends TestCase{
 		TestUtil::assertExpressionsEqual($expected, $actual);
 	}
 
-	public function testPositiveOperatorStrengthReductionForCommutativeFunctions() : void{
+	public function testPositiveOperatorPreservesArithmeticConversion() : void{
 		$actual = $this->parser->parse("+x");
-		$expected = $this->unoptimized_parser->parse("x");
+		$expected = $this->unoptimized_parser->parse("+x");
 		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(1, $actual->evaluate(["x" => true]));
+		self::assertSame(0, $actual->evaluate(["x" => false]));
 	}
 
 	public function testNegativeOperatorStrengthReductionForCommutativeFunctions() : void{
