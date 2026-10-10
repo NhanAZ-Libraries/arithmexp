@@ -345,33 +345,7 @@ final class Parser{
 
 				$param_tokens = $entry[$i + 1] ?? [];
 				assert(is_array($param_tokens));
-
-				if(isset($param_tokens[0]) && $param_tokens[0] instanceof FunctionCallArgumentSeparatorToken){
-					array_unshift($param_tokens, null);
-				}
-
-				$last = array_key_last($param_tokens);
-				if($last !== null && $param_tokens[$last] instanceof FunctionCallArgumentSeparatorToken){
-					$param_tokens[] = null;
-				}
-
-				for($j = count($param_tokens) - 1; $j >= 1; --$j){
-					if($param_tokens[$j] instanceof FunctionCallArgumentSeparatorToken && $param_tokens[$j - 1] instanceof FunctionCallArgumentSeparatorToken){
-						array_splice($param_tokens, $j - 1, 2, [$param_tokens[$j - 1], null, $param_tokens[$j]]);
-					}
-				}
-
-				$params = [];
-				for($j = 0, $max = count($param_tokens); $j < $max; ++$j){
-					$param_token = $param_tokens[$j];
-					if($j % 2 === 0 ? $param_token instanceof FunctionCallArgumentSeparatorToken : !($param_token instanceof FunctionCallArgumentSeparatorToken)){
-						assert($param_token !== null);
-						throw ParseException::unexpectedToken($expression, $param_token);
-					}
-					if($j % 2 === 0){
-						$params[] = $param_token;
-					}
-				}
+				$params = self::parseFunctionParameterTokens($expression, $param_tokens);
 
 				for($j = count($params), $max = min(count($fallback_param_values) - ($function->isVariadic() ? 1 : 0), $args_c); $j < $max; ++$j){
 					$params[] = null;
@@ -412,6 +386,42 @@ final class Parser{
 				array_splice($entry, $i, $args_c > 0 ? 2 : 1, [[$token, ...$params]]);
 			}
 		}
+	}
+
+	/**
+	 * @param list<Token|list<Token>|null> $param_tokens
+	 * @return list<Token|list<Token>|null>
+	 */
+	private static function parseFunctionParameterTokens(string $expression, array $param_tokens) : array{
+		if(isset($param_tokens[0]) && $param_tokens[0] instanceof FunctionCallArgumentSeparatorToken){
+			array_unshift($param_tokens, null);
+		}
+
+		$last = array_key_last($param_tokens);
+		if($last !== null && $param_tokens[$last] instanceof FunctionCallArgumentSeparatorToken){
+			$param_tokens[] = null;
+		}
+
+		for($j = count($param_tokens) - 1; $j >= 1; --$j){
+			if($param_tokens[$j] instanceof FunctionCallArgumentSeparatorToken && $param_tokens[$j - 1] instanceof FunctionCallArgumentSeparatorToken){
+				array_splice($param_tokens, $j - 1, 2, [$param_tokens[$j - 1], null, $param_tokens[$j]]);
+			}
+		}
+
+		$params = [];
+		for($j = 0, $max = count($param_tokens); $j < $max; ++$j){
+			$param_token = $param_tokens[$j];
+			if($j % 2 === 0 ? $param_token instanceof FunctionCallArgumentSeparatorToken : !($param_token instanceof FunctionCallArgumentSeparatorToken)){
+				if($param_token instanceof Token){
+					throw ParseException::unexpectedToken($expression, $param_token);
+				}
+				throw new RuntimeException("Expected an argument separator in function call parameters");
+			}
+			if($j % 2 === 0){
+				$params[] = $param_token;
+			}
+		}
+		return $params;
 	}
 
 	/**
