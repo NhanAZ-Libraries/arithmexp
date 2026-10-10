@@ -4,17 +4,27 @@ declare(strict_types=1);
 
 namespace muqsit\arithmexp\expression;
 
+use Generator;
+
 final class ConstantExpression implements Expression{
-	use GenericExpressionTrait{
-		__construct as __parentConstruct;
-		__debugInfo as __parentDebugInfo;
-	}
 
 	public function __construct(
-		string $expression,
+		readonly private string $expression,
 		readonly private int|float|bool $value
-	){
-		$this->__parentConstruct($expression, []);
+	){}
+
+	public function getExpression() : string{
+		return $this->expression;
+	}
+
+	/** @return list<never> */
+	public function getPostfixExpressionTokens() : array{
+		return [];
+	}
+
+	/** @return Generator<string> */
+	public function findVariables() : Generator{
+		yield from [];
 	}
 
 	public function evaluate(array $variable_values = []) : int|float|bool{
@@ -25,8 +35,6 @@ final class ConstantExpression implements Expression{
 	 * @return array<string, mixed>
 	 */
 	public function __debugInfo() : array{
-		$result = $this->__parentDebugInfo();
-		$result["value"] = $this->value;
-		return $result;
+		return ["expression" => $this->expression, "postfix" => "", "value" => $this->value];
 	}
 }

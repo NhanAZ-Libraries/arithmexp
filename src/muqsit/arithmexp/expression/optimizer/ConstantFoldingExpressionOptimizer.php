@@ -22,10 +22,7 @@ use function array_filter;
 use function array_slice;
 use function array_splice;
 use function count;
-use function gettype;
 use function is_bool;
-use function is_float;
-use function is_int;
 
 final class ConstantFoldingExpressionOptimizer implements ExpressionOptimizer{
 
@@ -103,11 +100,10 @@ final class ConstantFoldingExpressionOptimizer implements ExpressionOptimizer{
 						continue;
 					}
 
-					$replacement = match(true){
-						is_int($value), is_float($value) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$arg_tokens, $token]), $value)],
-						is_bool($value) => [new BooleanLiteralExpressionToken(Util::positionContainingExpressionTokens([...$arg_tokens, $token]), $value)],
-						default => throw new RuntimeException("Unexpected value type " . gettype($value))
-					};
+					$position = Util::positionContainingExpressionTokens([...$arg_tokens, $token]);
+					$replacement = is_bool($value)
+						? [new BooleanLiteralExpressionToken($position, $value)]
+						: [new NumericLiteralExpressionToken($position, $value)];
 
 					array_splice($entry, $i - $token->argument_count, 1 + $token->argument_count, $replacement);
 					$i -= $token->argument_count;
