@@ -6,6 +6,7 @@ namespace muqsit\arithmexp;
 
 use Closure;
 use DivisionByZeroError;
+use InvalidArgumentException;
 use muqsit\arithmexp\expression\ConstantExpression;
 use muqsit\arithmexp\expression\RawExpression;
 use muqsit\arithmexp\expression\optimizer\ExpressionTokenTree;
@@ -196,15 +197,24 @@ final class OptimizerTest extends TestCase{
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForOperandZero() : void{
-		$actual = $this->parser->parse("x + y * 0 + z * (0 / 2)");
-		$expected = $this->unoptimized_parser->parse("x");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$expression = $this->parser->parse("x + y * 0 + z * (0 / 2)");
+		self::assertEquals(1, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(InvalidArgumentException::class);
+		$expression->evaluate(["x" => 1, "z" => 3]);
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForOperandZeroWithGrouping() : void{
 		$expression = $this->parser->parse("(x + y + z) * 0 + 0 * (x + y + z)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertEquals(0, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(InvalidArgumentException::class);
+		$expression->evaluate(["y" => 2, "z" => 3]);
+	}
+
+	public function testZeroMultiplicationPreservesNestedDivisionFailure() : void{
+		$expression = $this->parser->parse("0 * (4 / x)");
+		self::assertEquals(0, $expression->evaluate(["x" => 2]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForEqualOperands() : void{
