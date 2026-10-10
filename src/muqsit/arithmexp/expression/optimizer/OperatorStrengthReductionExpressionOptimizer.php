@@ -231,20 +231,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	private function processAddition(Parser $parser, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
 		$filter = $this->multiplication_operation_matcher->matches(...);
 
-		$left_tree = Util::expressionTokenArrayToTree($parser, $left);
-		Util::flattenArray($left_tree, $filter);
-
-		foreach($left_tree as $index => $left_operand){
-			if($left_operand instanceof NumericLiteralExpressionToken && $left_operand->value < 0){
-				$left_tree[$index] = new NumericLiteralExpressionToken($left_operand->getPos(), -$left_operand->value);
-				return [
-					...$right,
-					...$this->flattened($left_tree),
-					$this->buildOpcodeToken($parser, $operator_token->getPos(), OpcodeToken::OP_BINARY_SUB)
-				];
-			}
-		}
-
 		$right_tree = Util::expressionTokenArrayToTree($parser, $right);
 		Util::flattenArray($right_tree, $filter);
 		foreach($right_tree as $index => $right_operand){

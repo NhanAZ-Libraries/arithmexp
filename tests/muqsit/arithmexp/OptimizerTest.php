@@ -329,6 +329,12 @@ final class OptimizerTest extends TestCase{
 		self::assertSame(1, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
+	public function testAdditionPreservesLeftOperandFailureOrder() : void{
+		$expression = $this->parser->parse("-x + (1 / y)");
+		$this->expectException(InvalidArgumentException::class);
+		$expression->evaluate(["y" => 0]);
+	}
+
 	public function testAdditionOperatorStrengthReductionForNegativeRightOperand() : void{
 		$actual = $this->parser->parse("x + -y");
 		self::assertSame(-1, $actual->evaluate(["x" => 2, "y" => 3]));
