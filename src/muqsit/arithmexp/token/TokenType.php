@@ -16,49 +16,47 @@ final class TokenType{
 	public const PARENTHESIS = 7;
 	public const UNARY_OPERATOR = 8;
 
+	/** @var array<int, self> */
+	private static array $instances = [];
+
+	private static function instanceFor(int $identifier, string $name) : self{
+		return self::$instances[$identifier] ??= new self($identifier, $name);
+	}
+
 	public static function BINARY_OPERATOR() : self{
-		static $instance = null;
-		return $instance ??= new self(self::BINARY_OPERATOR, "Binary Operator");
+		return self::instanceFor(self::BINARY_OPERATOR, "Binary Operator");
 	}
 
 	public static function BOOLEAN_LITERAL() : self{
-		static $instance = null;
-		return $instance ??= new self(self::BOOLEAN_LITERAL, "Boolean Literal");
+		return self::instanceFor(self::BOOLEAN_LITERAL, "Boolean Literal");
 	}
 
 	public static function FUNCTION_CALL() : self{
-		static $instance = null;
-		return $instance ??= new self(self::FUNCTION_CALL, "Function Call");
+		return self::instanceFor(self::FUNCTION_CALL, "Function Call");
 	}
 
 	public static function FUNCTION_CALL_ARGUMENT_SEPARATOR() : self{
-		static $instance = null;
-		return $instance ??= new self(self::FUNCTION_CALL_ARGUMENT_SEPARATOR, "Function Call Argument Separator");
+		return self::instanceFor(self::FUNCTION_CALL_ARGUMENT_SEPARATOR, "Function Call Argument Separator");
 	}
 
 	public static function IDENTIFIER() : self{
-		static $instance = null;
-		return $instance ??= new self(self::IDENTIFIER, "Identifier");
+		return self::instanceFor(self::IDENTIFIER, "Identifier");
 	}
 
 	public static function NUMERIC_LITERAL() : self{
-		static $instance = null;
-		return $instance ??= new self(self::NUMERIC_LITERAL, "Numeric Literal");
+		return self::instanceFor(self::NUMERIC_LITERAL, "Numeric Literal");
 	}
 
 	public static function OPCODE() : self{
-		static $instance = null;
-		return $instance ??= new self(self::NUMERIC_LITERAL, "Opcode");
+		return self::instanceFor(self::OPCODE, "Opcode");
 	}
 
 	public static function PARENTHESIS() : self{
-		static $instance = null;
-		return $instance ??= new self(self::PARENTHESIS, "Parenthesis");
+		return self::instanceFor(self::PARENTHESIS, "Parenthesis");
 	}
 
 	public static function UNARY_OPERATOR() : self{
-		static $instance = null;
-		return $instance ??= new self(self::UNARY_OPERATOR, "Unary Operator");
+		return self::instanceFor(self::UNARY_OPERATOR, "Unary Operator");
 	}
 
 	private function __construct(

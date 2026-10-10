@@ -82,7 +82,7 @@ final class OpcodeToken extends SimpleToken{
 	}
 
 	public function writeExpressionTokens(ExpressionTokenBuilderState $state) : void{
-		$state->current_group[$state->current_index] = new OpcodeExpressionToken($this->position, $this->code, $this->parent);
+		$state->replaceCurrent(new OpcodeExpressionToken($this->position, $this->code, $this->parent));
 	}
 
 	public function __debugInfo() : array{

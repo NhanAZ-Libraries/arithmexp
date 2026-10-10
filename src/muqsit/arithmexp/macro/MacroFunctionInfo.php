@@ -19,7 +19,7 @@ final class MacroFunctionInfo implements FunctionInfo{
 
 	/**
 	 * @param FunctionInfo $inner
-	 * @param Closure(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, list<Token|list<Token>> $args) : (list<Token>|null) $resolver
+	 * @param Closure(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, list<Token|list<Token>> $args) : (list<Token|list<Token>>|null) $resolver
 	 */
 	public function __construct(
 		readonly public FunctionInfo $inner,

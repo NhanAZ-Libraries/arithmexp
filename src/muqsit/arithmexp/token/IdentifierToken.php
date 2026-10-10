@@ -26,7 +26,7 @@ final class IdentifierToken extends SimpleToken{
 		try{
 			$info = $state->parser->constant_registry->get($this->label);
 		}catch(InvalidArgumentException){
-			$state->current_group[$state->current_index] = new VariableExpressionToken($this->position, $this->label);
+			$state->replaceCurrent(new VariableExpressionToken($this->position, $this->label));
 			return;
 		}
 		$info->writeExpressionTokens($state->parser, $state->expression, $this, $state);

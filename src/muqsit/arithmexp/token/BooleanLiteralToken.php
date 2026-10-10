@@ -22,7 +22,7 @@ final class BooleanLiteralToken extends SimpleToken{
 	}
 
 	public function writeExpressionTokens(ExpressionTokenBuilderState $state) : void{
-		$state->current_group[$state->current_index] = new BooleanLiteralExpressionToken($this->position, $this->value);
+		$state->replaceCurrent(new BooleanLiteralExpressionToken($this->position, $this->value));
 	}
 
 	public function __debugInfo() : array{

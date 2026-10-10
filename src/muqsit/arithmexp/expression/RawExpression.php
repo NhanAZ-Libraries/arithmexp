@@ -15,6 +15,10 @@ use muqsit\arithmexp\token\OpcodeToken;
 use RuntimeException;
 use function array_slice;
 use function assert;
+use function get_debug_type;
+use function is_bool;
+use function is_float;
+use function is_int;
 
 /**
  * Although implementing a postfix expression evaluator is less demanding than what
@@ -74,6 +78,7 @@ final class RawExpression implements Expression{
 	}
 
 	public function evaluate(array $variable_values = []) : int|float|bool{
+		/** @var array<int, int|float|bool> $stack */
 		$stack = [];
 		$ptr = -1;
 		foreach($this->by_kind as $index => $token){
@@ -238,7 +243,11 @@ final class RawExpression implements Expression{
 				case 25:
 					assert($token instanceof FunctionCallExpressionToken);
 					$ptr -= $token->argument_count - 1;
-					$stack[$ptr] = ($token->function)(...array_slice($stack, $ptr, $token->argument_count));
+					$value = ($token->function)(...array_slice($stack, $ptr, $token->argument_count));
+					if(!is_int($value) && !is_float($value) && !is_bool($value)){
+						throw new RuntimeException("Function returned " . get_debug_type($value) . " instead of int, float, or bool");
+					}
+					$stack[$ptr] = $value;
 					break;
 				default:
 					throw new RuntimeException("Don't know how to evaluate " . get_debug_type($token));

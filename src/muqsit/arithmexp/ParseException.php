@@ -40,7 +40,7 @@ final class ParseException extends Exception{
 				" | " . $exception->expression . PHP_EOL .
 				" | " . str_repeat(" ", $exception->position->start) . str_repeat("^", $exception->position->length())
 			),
-			$exception->code,
+			$exception->getCode(),
 			$exception->getPrevious()
 		);
 	}

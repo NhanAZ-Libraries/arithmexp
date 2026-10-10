@@ -69,6 +69,6 @@ final class SimpleFunctionInfo implements FunctionInfo{
 	}
 
 	public function writeExpressionTokens(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, ExpressionTokenBuilderState $state) : void{
-		$state->current_group[$state->current_index] = new FunctionCallExpressionToken($token->getPos(), $function_name, $argument_count, $this->closure, $this->flags, $token);
+		$state->replaceCurrent(new FunctionCallExpressionToken($token->getPos(), $function_name, $argument_count, $this->closure, $this->flags, $token));
 	}
 }

@@ -7,10 +7,10 @@ namespace muqsit\arithmexp\pattern\matcher;
 use muqsit\arithmexp\expression\token\ExpressionToken;
 
 final class AnyPatternMatcher implements PatternMatcher{
+	private static ?self $instance = null;
 
 	public static function instance() : self{
-		static $instance = null;
-		return $instance ??= new self();
+		return self::$instance ??= new self();
 	}
 
 	private function __construct(){

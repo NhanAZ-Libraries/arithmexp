@@ -1,7 +1,7 @@
 # arithmexp
 
 > [!NOTE]
-> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its current patch replaces two dynamic class-name diagnostics with `get_debug_type()`, checks matcher types through class and interface names so DevTools can shade the virion for Calculator, and fixes constant-folded strict inequality. The upstream library remains the source for general Composer installation and feature documentation. The fork has no stable release until its required validation is complete; PHPStan at maximum level currently reports 112 upstream source errors.
+> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its patch makes the virion compatible with DevTools shading and fixes strict inequality, opcode token identity, and evaluation type handling. The upstream library remains the source for general Composer installation and feature documentation. The fork has no stable release until its required validation is complete; PHPStan at maximum level still reports source errors.
 
 [![Upstream CI](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml/badge.svg)](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml)
 [![Upstream latest release](https://img.shields.io/github/v/release/Muqsit/arithmexp)](https://github.com/Muqsit/arithmexp/releases/latest)

@@ -9,10 +9,7 @@ use muqsit\arithmexp\expression\token\NumericLiteralExpressionToken;
 use muqsit\arithmexp\Parser;
 use muqsit\arithmexp\token\builder\ExpressionTokenBuilderState;
 use muqsit\arithmexp\token\IdentifierToken;
-use RuntimeException;
-use function gettype;
-use function is_float;
-use function is_int;
+use function is_bool;
 
 final class SimpleConstantInfo implements ConstantInfo{
 
@@ -21,10 +18,10 @@ final class SimpleConstantInfo implements ConstantInfo{
 	){}
 
 	public function writeExpressionTokens(Parser $parser, string $expression, IdentifierToken $token, ExpressionTokenBuilderState $state) : void{
-		$state->current_group[$state->current_index] = match(true){
-			is_int($this->value), is_float($this->value) => new NumericLiteralExpressionToken($token->getPos(), $this->value),
-			is_bool($this->value) => new BooleanLiteralExpressionToken($token->getPos(), $this->value),
-			default => throw new RuntimeException("Unexpected value type " . gettype($this->value))
-		};
+		if(is_bool($this->value)){
+			$state->replaceCurrent(new BooleanLiteralExpressionToken($token->getPos(), $this->value));
+			return;
+		}
+		$state->replaceCurrent(new NumericLiteralExpressionToken($token->getPos(), $this->value));
 	}
 }

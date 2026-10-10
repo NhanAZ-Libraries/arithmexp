@@ -10,6 +10,7 @@ use muqsit\arithmexp\Parser;
 use muqsit\arithmexp\token\Token;
 use muqsit\arithmexp\Util;
 use RuntimeException;
+use function array_splice;
 
 final class ExpressionTokenBuilderState{
 
@@ -28,6 +29,10 @@ final class ExpressionTokenBuilderState{
 		readonly public string $expression,
 		public array $tokens
 	){}
+
+	public function replaceCurrent(ExpressionToken $token) : void{
+		array_splice($this->current_group, $this->current_index, 1, [$token]);
+	}
 
 	/**
 	 * @return Generator<ExpressionToken>
