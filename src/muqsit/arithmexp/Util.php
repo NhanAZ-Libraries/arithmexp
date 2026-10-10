@@ -13,6 +13,7 @@ use muqsit\arithmexp\token\BinaryOperatorToken;
 use muqsit\arithmexp\token\Token;
 use muqsit\arithmexp\token\UnaryOperatorToken;
 use function array_map;
+use function array_is_list;
 use function array_slice;
 use function array_splice;
 use function count;
@@ -61,7 +62,7 @@ final class Util{
 
 			$count = count($entry);
 			for($i = 0; $i < $count; ++$i){
-				if(is_array($entry[$i]) && ($filter === null || $filter($entry[$i]))){
+				if(is_array($entry[$i]) && array_is_list($entry[$i]) && ($filter === null || $filter($entry[$i]))){
 					array_splice($entry, $i, 1, $entry[$i]);
 					$stack[] = &$entry;
 					break;
