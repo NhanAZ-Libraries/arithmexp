@@ -17,13 +17,19 @@ final class InstanceOfPatternMatcher implements PatternMatcher{
 
 	public function matches(ExpressionToken|array $entry) : bool{
 		if($entry instanceof ExpressionToken){
-			return $entry instanceof $this->class;
+			return $this->matchesType($entry);
 		}
 		foreach($entry as $token){
-			if(!($token instanceof $this->class)){
+			if(!$this->matchesType($token)){
 				return false;
 			}
 		}
 		return true;
+	}
+
+	private function matchesType(ExpressionToken $token) : bool{
+		return get_class($token) === $this->class
+			|| in_array($this->class, class_parents($token) ?: [], true)
+			|| in_array($this->class, class_implements($token) ?: [], true);
 	}
 }
