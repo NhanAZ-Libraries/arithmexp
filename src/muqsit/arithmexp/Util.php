@@ -113,11 +113,11 @@ final class Util{
 	}
 
 	/**
-	 * @param list<Token> $tokens
+	 * @param list<Token|ExpressionToken> $tokens
 	 * @return Position
 	 */
 	public static function positionContainingTokens(array $tokens) : Position{
-		return Position::containing(array_map(static fn(Token $token) : Position => $token->getPos(), $tokens));
+		return Position::containing(array_map(static fn(Token|ExpressionToken $token) : Position => $token->getPos(), $tokens));
 	}
 
 	/**

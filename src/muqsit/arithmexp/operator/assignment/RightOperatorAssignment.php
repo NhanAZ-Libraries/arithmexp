@@ -10,10 +10,10 @@ use muqsit\arithmexp\token\BinaryOperatorToken;
 use function count;
 
 final class RightOperatorAssignment implements OperatorAssignment{
+	private static ?self $instance = null;
 
 	public static function instance() : self{
-		static $instance = null;
-		return $instance ??= new self();
+		return self::$instance ??= new self();
 	}
 
 	private function __construct(){

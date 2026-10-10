@@ -6,6 +6,7 @@ namespace muqsit\arithmexp\token\builder;
 
 use muqsit\arithmexp\token\Token;
 use function array_key_last;
+use function array_splice;
 use function strlen;
 
 final class TokenBuilderState{
@@ -28,6 +29,10 @@ final class TokenBuilderState{
 		readonly public int $length,
 		public int $unknown_token_seq
 	){}
+
+	public function replaceCaptured(int $index, Token $token) : void{
+		array_splice($this->captured_tokens, $index, 1, [$token]);
+	}
 
 	public function getLastCapturedToken() : ?Token{
 		$index = array_key_last($this->captured_tokens);

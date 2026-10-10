@@ -10,10 +10,10 @@ use muqsit\arithmexp\token\UnaryOperatorToken;
 use function count;
 
 final class NullOperatorAssignment implements OperatorAssignment{
+	private static ?self $instance = null;
 
 	public static function instance() : self{
-		static $instance = null;
-		return $instance ??= new self();
+		return self::$instance ??= new self();
 	}
 
 	private function __construct(){

@@ -15,7 +15,7 @@ final class OperatorAssignmentTraverserState{
 	public bool $changed = false;
 
 	/**
-	 * @param list<Token> $tokens
+	 * @param list<Token|list<Token>> $tokens
 	 */
 	public function __construct(
 		private array &$tokens

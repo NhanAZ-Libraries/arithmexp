@@ -12,10 +12,10 @@ use function count;
 use function is_array;
 
 final class NonAssociativeOperatorAssignment implements OperatorAssignment{
+	private static ?self $instance = null;
 
 	public static function instance() : self{
-		static $instance = null;
-		return $instance ??= new self();
+		return self::$instance ??= new self();
 	}
 
 	private function __construct(){
@@ -25,14 +25,14 @@ final class NonAssociativeOperatorAssignment implements OperatorAssignment{
 		return self::TYPE_NON_ASSOCIATIVE;
 	}
 
-	private function getPairPrecedence(OperatorList $list, mixed $entry) : ?int{
+	private function getPairOperator(OperatorList $list, mixed $entry) : ?BinaryOperatorToken{
 		if(!is_array($entry) || count($entry) !== 3 || !($entry[1] instanceof BinaryOperatorToken)){
 			return null;
 		}
 		if(!isset($list->binary[$entry[1]->operator])){
 			return null;
 		}
-		return $list->binary[$entry[1]->operator]->getPrecedence();
+		return $entry[1];
 	}
 
 	public function traverse(OperatorList $list, string $expression, array &$tokens) : Generator{
@@ -45,16 +45,16 @@ final class NonAssociativeOperatorAssignment implements OperatorAssignment{
 				$precedence = $list->binary[$value->operator]->getPrecedence();
 				if($index > 0){
 					$lvalue = $tokens[$index - 1];
-					$lvalue_precedence = $this->getPairPrecedence($list, $lvalue);
-					if($lvalue_precedence === $precedence){
+					$lvalue_operator = $this->getPairOperator($list, $lvalue);
+					if($lvalue_operator !== null && $list->binary[$lvalue_operator->operator]->getPrecedence() === $precedence){
 						throw ParseException::undefinedOperatorAssociativity($expression, $value->getPos());
 					}
 				}
 				if($index + 1 < $count){
 					$rvalue = $tokens[$index + 1];
-					$rvalue_precedence = $this->getPairPrecedence($list, $rvalue);
-					if($rvalue_precedence === $precedence){
-						throw ParseException::undefinedOperatorAssociativity($expression, $rvalue[1]->getPos());
+					$rvalue_operator = $this->getPairOperator($list, $rvalue);
+					if($rvalue_operator !== null && $list->binary[$rvalue_operator->operator]->getPrecedence() === $precedence){
+						throw ParseException::undefinedOperatorAssociativity($expression, $rvalue_operator->getPos());
 					}
 				}
 				$state->index = $index;
