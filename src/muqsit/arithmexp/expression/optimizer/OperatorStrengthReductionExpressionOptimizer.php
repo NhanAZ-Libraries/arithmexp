@@ -215,8 +215,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 		return match($operator_token->code){
 			OpcodeToken::OP_BINARY_EXP => null,
 			OpcodeToken::OP_BINARY_MUL => match(true){
-				$this->valueEquals($left, 1) => $right,
-				$this->valueEquals($right, 1) => $left,
 				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => null
 			},

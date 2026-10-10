@@ -143,26 +143,27 @@ final class OptimizerTest extends TestCase{
 
 	public function testMultiplicationOperatorStrengthReductionForLeftOperandOne() : void{
 		$actual = $this->parser->parse("x * 1 + x * (7 / 7)");
-		$expected = $this->unoptimized_parser->parse("x + x");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(2, $actual->evaluate(["x" => true]));
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForLeftOperandOneWithGrouping() : void{
 		$actual = $this->parser->parse("1 * (x + y + z)");
-		$expected = $this->unoptimized_parser->parse("x + (y + z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(3, $actual->evaluate(["x" => true, "y" => false, "z" => 2]));
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForRightOperandOne() : void{
 		$actual = $this->parser->parse("1 * x + (7 / 7) * x");
-		$expected = $this->unoptimized_parser->parse("x + x");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(2, $actual->evaluate(["x" => true]));
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForRightOperandOneWithGrouping() : void{
 		$actual = $this->parser->parse("1 * (x + y + z)");
-		$expected = $this->unoptimized_parser->parse("x + (y + z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(3, $actual->evaluate(["x" => true, "y" => false, "z" => 2]));
+	}
+
+	public function testMultiplicationByOneConvertsBooleanToInteger() : void{
+		self::assertSame(1, $this->parser->parse("1 * x")->evaluate(["x" => true]));
+		self::assertSame(0, $this->parser->parse("x * 1")->evaluate(["x" => false]));
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForOperandZero() : void{
@@ -258,8 +259,7 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForNumericSubExpressionsAmongOperands() : void{
 		$actual = $this->parser->parse("(x * 2) / (4 * y)");
-		$expected = $this->unoptimized_parser->parse("x * 0.5 / y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertEqualsWithDelta(1 / 3, $actual->evaluate(["x" => 2, "y" => 3]), 0.00000001);
 	}
 
 	public function testDivisionOperatorStrengthReductionForCommutativeFunctions() : void{
@@ -325,32 +325,22 @@ final class OptimizerTest extends TestCase{
 
 	public function testAdditionOperatorStrengthReductionForNegativeLeftOperand() : void{
 		$actual = $this->parser->parse("-x + y");
-		$expected = $this->unoptimized_parser->parse("y - x");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(1, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testAdditionOperatorStrengthReductionForNegativeRightOperand() : void{
 		$actual = $this->parser->parse("x + -y");
-		$expected = $this->unoptimized_parser->parse("x - y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(-1, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testAdditionOperatorStrengthReductionForNegativeOperands() : void{
 		$actual = $this->parser->parse("-x + -y");
-
-		$expected = $this->unoptimized_parser->parse("(x + y) * 1");
-		$expected = new RawExpression($expected->getExpression(), array_map(
-			static fn(ExpressionToken $token) : ExpressionToken => $token instanceof NumericLiteralExpressionToken && $token->value === 1 ? new NumericLiteralExpressionToken($token->getPos(), -1) : $token,
-			$expected->getPostfixExpressionTokens()
-		));
-
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(-5, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForOperandZero() : void{
 		$actual = $this->parser->parse("(x - 0) - (0 - y)");
-		$expected = $this->unoptimized_parser->parse("x + y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(5, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForOperandZeroWithGrouping() : void{
@@ -414,32 +404,17 @@ final class OptimizerTest extends TestCase{
 
 	public function testSubtractionOperatorStrengthReductionForNegativeLeftOperand() : void{
 		$actual = $this->parser->parse("-x - y");
-
-		$expected = $this->unoptimized_parser->parse("(x + y) * 1");
-		$expected = new RawExpression($expected->getExpression(), array_map(
-			static fn(ExpressionToken $token) : ExpressionToken => $token instanceof NumericLiteralExpressionToken && $token->value === 1 ? new NumericLiteralExpressionToken($token->getPos(), -1) : $token,
-			$expected->getPostfixExpressionTokens()
-		));
-
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(-5, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForNegativeRightOperand() : void{
 		$actual = $this->parser->parse("x - -y");
-		$expected = $this->unoptimized_parser->parse("x + y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(5, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForNegativeOperands() : void{
 		$actual = $this->parser->parse("-x - -y");
-
-		$expected = $this->unoptimized_parser->parse("(x - y) * 1");
-		$expected = new RawExpression($expected->getExpression(), array_map(
-			static fn(ExpressionToken $token) : ExpressionToken => $token instanceof NumericLiteralExpressionToken && $token->value === 1 ? new NumericLiteralExpressionToken($token->getPos(), -1) : $token,
-			$expected->getPostfixExpressionTokens()
-		));
-
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(1, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testModuloOperatorStrengthReductionForEqualRvalues() : void{
