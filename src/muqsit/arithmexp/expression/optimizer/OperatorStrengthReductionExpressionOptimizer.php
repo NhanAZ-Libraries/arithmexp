@@ -40,7 +40,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	readonly private PatternMatcher $unary_operation_matcher;
 	readonly private PatternMatcher $modulo_operation_matcher;
 	readonly private PatternMatcher $multiplication_operation_matcher;
-	readonly private PatternMatcher $exponentiation_operation_matcher;
 
 	public function __construct(){
 		$this->any_non_numeric_matcher = Pattern::not(Pattern::instanceof(NumericLiteralExpressionToken::class));
@@ -69,11 +68,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			AnyPatternMatcher::instance(),
 			AnyPatternMatcher::instance(),
 			OpcodePatternMatcher::setOf([OpcodeToken::OP_BINARY_MUL])
-		]);
-		$this->exponentiation_operation_matcher = new ArrayPatternMatcher([
-			AnyPatternMatcher::instance(),
-			AnyPatternMatcher::instance(),
-			OpcodePatternMatcher::setOf([OpcodeToken::OP_BINARY_EXP])
 		]);
 	}
 
@@ -242,7 +236,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			},
 			OpcodeToken::OP_BINARY_DIV => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionDivisionByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
-				$this->valueEquals($left, 0) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 0)],
 				$this->valueEquals($right, 1) => $left,
 				$this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processDivision($parser, $expression, $operator_token, $left, $right)
@@ -452,40 +445,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($left_operand), $result)],
 				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($right_operand), 1)]
 			];
-		}
-
-		// reduce (x / x) to (1 / 1)
-		if($this->tokensEqualByReturnValue($left_operand, $right_operand)){
-			return [
-				// on cancelling a value in the numerator with a value in the denominator, replace them operands with 1 (identity element of division)
-				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($left_operand), 1)],
-				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($right_operand), 1)]
-			];
-		}
-
-		// reduce (x ** y / x ** z) to {[x ** (y - z)] / 1}
-		/**
-		 * @var list<ExpressionToken> $left_tree
-		 * @var list<ExpressionToken> $right_tree
-		 */
-		[$left_tree, $right_tree] = Util::expressionTokenArrayToTree($parser, [...$left_operand, ...$right_operand]);
-		if($this->exponentiation_operation_matcher->matches($left_tree) && $this->exponentiation_operation_matcher->matches($right_tree)){
-			$lvalue = $this->flattened($left_tree[0]);
-			$rvalue = $this->flattened($right_tree[0]);
-			if($this->tokensEqualByReturnValue($lvalue, $rvalue)){
-				return [
-					$this->flattened([
-						$lvalue,
-						[
-							$left_tree[1],
-							$right_tree[1],
-							$this->buildOpcodeToken($parser, Util::positionContainingExpressionTokens([...$lvalue, ...$rvalue]), OpcodeToken::OP_BINARY_SUB)
-						],
-						$this->buildOpcodeToken($parser, $operator_token->getPos(), OpcodeToken::OP_BINARY_EXP)
-					]),
-					[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($right_operand), 1)]
-				];
-			}
 		}
 
 		return null;

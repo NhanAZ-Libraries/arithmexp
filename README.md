@@ -8,6 +8,10 @@
 
 [`arithmexp`](https://github.com/Muqsit/arithmexp) is a powerful mathematical expression parser and evaluator library for PHP with support for [variable substitution](https://github.com/Muqsit/arithmexp#evaluating-a-mathematical-expression), [constant declaration](https://github.com/Muqsit/arithmexp/wiki), [deterministic and non-deterministic function registration](https://github.com/Muqsit/arithmexp/wiki), and more.
 
+## Unreleased fork compatibility note
+
+The fork's pending source revision removes three unsafe direct division rewrites: `0 / x`, `x / x`, and `x ** y / x ** z`. When their denominators become zero, these expressions now raise `DivisionByZeroError` at evaluation time, as they do with the unoptimized parser. Earlier fork source could fold them to a value and hide that error. Other algebraic rewrites still need an error-preservation audit, so this change does not establish full equivalence between optimized and unoptimized evaluation. No stable fork release includes this change yet.
+
 > [!TIP]
 > Try out arithmexp parser on the [**demo site**](https://arithmexp.cosmicpe.dev/)!
 

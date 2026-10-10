@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace muqsit\arithmexp;
 
 use Closure;
+use DivisionByZeroError;
 use muqsit\arithmexp\expression\ConstantExpression;
 use muqsit\arithmexp\expression\RawExpression;
 use muqsit\arithmexp\expression\optimizer\ExpressionTokenTree;
@@ -208,14 +209,16 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForEqualOperands() : void{
 		$expression = $this->parser->parse("x / x + y / y + z / z");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(3, $expression->evaluate());
+		self::assertEquals(3, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0, "y" => 2, "z" => 3]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForEqualOperandsWithGrouping() : void{
 		$expression = $this->parser->parse("(x + y + z) / (x + y + z)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(1, $expression->evaluate());
+		self::assertEquals(1, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 1, "y" => -1, "z" => 0]);
 	}
 
 	public function testMultiplicationOperatorStrengthReductionForNanOperands() : void{
@@ -230,20 +233,23 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForCommutativelyEqualOperands() : void{
 		$expression = $this->parser->parse("(x + y + z) / (y + x + z)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(1, $expression->evaluate());
+		self::assertEquals(1, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 1, "y" => -1, "z" => 0]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForLeftOperandZero() : void{
-		$actual = $this->parser->parse("x + 0 / x + ((3 - 3) / y)");
-		$expected = $this->unoptimized_parser->parse("x");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$expression = $this->parser->parse("x + 0 / x + ((3 - 3) / y)");
+		self::assertEquals(2, $expression->evaluate(["x" => 2, "y" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0, "y" => 3]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForLeftOperandZeroWithGrouping() : void{
 		$expression = $this->parser->parse("0 / (x + y + z)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertEquals(0, $expression->evaluate(["x" => 1, "y" => 2, "z" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 1, "y" => -1, "z" => 0]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForRightOperandNan() : void{
@@ -265,9 +271,10 @@ final class OptimizerTest extends TestCase{
 	}
 
 	public function testDivisionOperatorStrengthReductionForCommonSubExpressionsAmongOperands() : void{
-		$actual = $this->parser->parse("(x * y) / (y * z)");
-		$expected = $this->unoptimized_parser->parse("x / z");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$expression = $this->parser->parse("(x * y) / (y * z)");
+		self::assertEquals(0.5, $expression->evaluate(["x" => 2, "y" => 3, "z" => 4]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 2, "y" => 0, "z" => 4]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForNumericSubExpressionsAmongOperands() : void{
@@ -278,8 +285,9 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForCommutativeFunctions() : void{
 		$expression = $this->parser->parse("min(x, y) / min(y, x)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(1, $expression->evaluate());
+		self::assertEquals(1, $expression->evaluate(["x" => 2, "y" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0, "y" => 3]);
 	}
 
 	public function testDivisionOperatorStrengthReductionForNonCommutativeFunctions() : void{
@@ -289,9 +297,10 @@ final class OptimizerTest extends TestCase{
 	}
 
 	public function testDivisionOperatorStrengthReductionForQuotientRuleOfExponents() : void{
-		$actual = $this->parser->parse("x ** y / x ** z");
-		$expected = $this->unoptimized_parser->parse("x ** (y - z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$expression = $this->parser->parse("x ** y / x ** z");
+		self::assertEquals(4, $expression->evaluate(["x" => 2, "y" => 3, "z" => 1]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0, "y" => 1, "z" => 1]);
 	}
 
 	public function testModuloOperatorStrengthReductionForRightOperandOne() : void{
@@ -302,8 +311,9 @@ final class OptimizerTest extends TestCase{
 
 	public function testModuloOperatorStrengthReductionForRightOperandOneWithGrouping() : void{
 		$expression = $this->parser->parse("w % ((x * y) / (y * x))");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertEquals(0, $expression->evaluate(["w" => 7, "x" => 2, "y" => 3]));
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["w" => 7, "x" => 0, "y" => 3]);
 	}
 
 	public function testAdditionOperatorStrengthReductionForOperandZero() : void{
