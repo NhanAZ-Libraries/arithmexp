@@ -215,18 +215,7 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	 */
 	private function processBinaryExpression(Parser $parser, Expression $expression, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
 		return match($operator_token->code){
-			OpcodeToken::OP_BINARY_EXP => match(true){
-				$this->valueEquals($left, 0) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 0)],
-				$this->valueEquals($left, 1) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 1)],
-				$this->valueEquals($right, 2) && !$this->valueEquals($left, 2) => [
-					...$left,
-					...$left,
-					$this->buildOpcodeToken($parser, Util::positionContainingExpressionTokens($right), OpcodeToken::OP_BINARY_MUL)
-				],
-				$this->valueEquals($right, 1) => $left,
-				$this->valueEquals($right, 0) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 1)],
-				default => null
-			},
+			OpcodeToken::OP_BINARY_EXP => null,
 			OpcodeToken::OP_BINARY_MUL => match(true){
 				$this->valueEquals($left, 1) => $right,
 				$this->valueEquals($right, 1) => $left,
@@ -241,7 +230,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			},
 			OpcodeToken::OP_BINARY_MOD => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionModuloByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
-				$this->valueEquals($right, 1) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 0)],
 				default => $this->processModulo($parser, $expression, $operator_token, $left, $right)
 			},
 			OpcodeToken::OP_BINARY_ADD => match(true){
