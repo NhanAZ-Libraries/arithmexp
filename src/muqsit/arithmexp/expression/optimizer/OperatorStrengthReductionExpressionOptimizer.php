@@ -30,8 +30,6 @@ use function count;
 use function is_array;
 use function is_float;
 use function is_int;
-use function is_nan;
-use const NAN;
 
 final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOptimizer{
 
@@ -47,9 +45,7 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			OpcodePatternMatcher::setOf([
 				OpcodeToken::OP_BINARY_ADD,
 				OpcodeToken::OP_BINARY_DIV,
-				OpcodeToken::OP_BINARY_EXP,
 				OpcodeToken::OP_BINARY_MOD,
-				OpcodeToken::OP_BINARY_MUL,
 				OpcodeToken::OP_BINARY_SUB
 			])
 		]);
@@ -139,14 +135,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	}
 
 	/**
-	 * @param list<ExpressionToken> $tokens
-	 * @return bool
-	 */
-	private function valueIsNan(array $tokens) : bool{
-		return count($tokens) === 1 && $tokens[0] instanceof NumericLiteralExpressionToken && is_nan($tokens[0]->value);
-	}
-
-	/**
 	 * @param list<ExpressionToken> $x
 	 * @param list<ExpressionToken> $y
 	 * @return bool
@@ -213,31 +201,21 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	 */
 	private function processBinaryExpression(Parser $parser, Expression $expression, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
 		return match($operator_token->code){
-			OpcodeToken::OP_BINARY_EXP => null,
-			OpcodeToken::OP_BINARY_MUL => match(true){
-				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
-				default => null
-			},
 			OpcodeToken::OP_BINARY_DIV => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionDivisionByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
-				$this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processDivision($parser, $expression, $operator_token, $left, $right)
 			},
 			OpcodeToken::OP_BINARY_MOD => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionModuloByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
 				default => $this->processModulo($parser, $expression, $operator_token, $left, $right)
 			},
-			OpcodeToken::OP_BINARY_ADD => match(true){
-				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
-				default => $this->processAddition($parser, $operator_token, $left, $right)
-			},
+			OpcodeToken::OP_BINARY_ADD => $this->processAddition($parser, $operator_token, $left, $right),
 			OpcodeToken::OP_BINARY_SUB => match(true){
 				$this->valueEquals($left, 0) => [
 					new NumericLiteralEXpressionToken(Util::positionContainingExpressionTokens($right), -1),
 					...$right,
 					$this->buildOpcodeToken($parser, Util::positionContainingExpressionTokens($right), OpcodeToken::OP_BINARY_MUL)
 				],
-				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processSubtraction($parser, $operator_token, $left, $right)
 			},
 			default => null

@@ -203,12 +203,10 @@ final class OptimizerTest extends TestCase{
 
 	public function testMultiplicationOperatorStrengthReductionForNanOperands() : void{
 		$expression = $this->parser->parse("nan * x");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
 
 		$expression = $this->parser->parse("x * nan");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
 	}
 
 	public function testDivisionOperatorStrengthReductionForCommutativelyEqualOperands() : void{
@@ -234,7 +232,6 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForRightOperandNan() : void{
 		$expression = $this->parser->parse("mt_rand(1, 2) / nan");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
 		self::assertNan($expression->evaluate());
 	}
 
@@ -321,12 +318,10 @@ final class OptimizerTest extends TestCase{
 
 	public function testAdditionOperatorStrengthReductionForNanOperands() : void{
 		$expression = $this->parser->parse("nan + x");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
 
 		$expression = $this->parser->parse("x + nan");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
 	}
 
 	public function testAdditionOperatorStrengthReductionForNegativeLeftOperand() : void{
@@ -404,12 +399,25 @@ final class OptimizerTest extends TestCase{
 
 	public function testSubtractionOperatorStrengthReductionForNanOperands() : void{
 		$expression = $this->parser->parse("nan - x");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
 
 		$expression = $this->parser->parse("x - nan");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertNan($expression->evaluate());
+		self::assertNan($expression->evaluate(["x" => 2]));
+	}
+
+	public function testNanDoesNotSkipVariableOrDivisionErrors() : void{
+		foreach(["nan * x", "x * nan", "nan + x", "x + nan", "x / nan", "nan - x", "x - nan"] as $source){
+			$error = null;
+			try{
+				$this->parser->parse($source)->evaluate();
+			}catch(Throwable $exception){
+				$error = $exception::class;
+			}
+			self::assertSame(InvalidArgumentException::class, $error, $source);
+		}
+
+		$this->expectException(DivisionByZeroError::class);
+		$this->parser->parse("nan + (1 / x)")->evaluate(["x" => 0]);
 	}
 
 	public function testSubtractionOperatorStrengthReductionForNegativeLeftOperand() : void{
