@@ -241,7 +241,7 @@ final class RawExpression implements Expression{
 					$stack[$ptr] = ($token->function)(...array_slice($stack, $ptr, $token->argument_count));
 					break;
 				default:
-					throw new RuntimeException("Don't know how to evaluate " . $token::class);
+					throw new RuntimeException("Don't know how to evaluate " . get_debug_type($token));
 			}
 		}
 		return $stack[$ptr] ?? throw new RuntimeException("Could not evaluate \"{$this->expression}\"");

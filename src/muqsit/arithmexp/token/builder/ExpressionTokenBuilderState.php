@@ -37,7 +37,7 @@ final class ExpressionTokenBuilderState{
 		Util::flattenArray($tokens);
 		foreach($tokens as $token){
 			if(!($token instanceof ExpressionToken)){
-				throw new RuntimeException("Expected " . ExpressionToken::class . ", got " . $token::class);
+				throw new RuntimeException("Expected " . ExpressionToken::class . ", got " . get_debug_type($token));
 			}
 			yield $token;
 		}

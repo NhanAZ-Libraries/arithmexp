@@ -1,4 +1,4 @@
-name: CI
+name: Validate arithmexp package and run tests
 
 on:
   push:
@@ -11,24 +11,19 @@ permissions:
 
 jobs:
   phpunit:
-    runs-on: ubuntu-latest
+    name: Validate Composer package and run PHPUnit
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Validate composer.json and composer.lock
-      run: composer validate --strict
-
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
+    - name: Check out arithmexp source
+      uses: actions/checkout@v7.0.1
       with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-
+        persist-credentials: false
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+    - name: Validate Composer manifest and lockfile
+      run: composer validate --strict --no-check-publish
 
-    - name: Run test suite
+    - name: Install locked Composer dependencies
+      run: composer install --prefer-dist --no-progress --no-scripts --no-plugins
+
+    - name: Run upstream PHPUnit suite
       run: ./vendor/bin/phpunit tests --testdox
