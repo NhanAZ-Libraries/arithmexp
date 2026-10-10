@@ -92,15 +92,13 @@ final class Util{
 	 * @param Parser $parser
 	 * @param list<ExpressionToken> $postfix_expression_tokens
 	 * @param int $offset
-	 * @param int|null $length
+	 * @param int|null $length Number of tokens to read from the offset
 	 * @return list<ExpressionToken|list<ExpressionToken>>
 	 */
 	public static function expressionTokenArrayToTree(Parser $parser, array $postfix_expression_tokens, int $offset = 0, ?int $length = null) : array{
-		$length ??= count($postfix_expression_tokens);
 		/** @var list<ExpressionToken|list<ExpressionToken>> $tree */
 		$tree = [];
-		for($i = $offset; $i < $length; ++$i){
-			$operand = $postfix_expression_tokens[$i];
+		foreach(array_slice($postfix_expression_tokens, $offset, $length) as $operand){
 			$tree[] = $operand;
 			$token = self::asFunctionCallExpressionToken($parser, $operand);
 			if($token !== null){
