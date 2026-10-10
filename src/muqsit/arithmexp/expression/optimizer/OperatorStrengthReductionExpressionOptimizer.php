@@ -220,7 +220,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			},
 			OpcodeToken::OP_BINARY_DIV => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionDivisionByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
-				$this->valueEquals($right, 1) => $left,
 				$this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processDivision($parser, $expression, $operator_token, $left, $right)
 			},
@@ -238,7 +237,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 					...$right,
 					$this->buildOpcodeToken($parser, Util::positionContainingExpressionTokens($right), OpcodeToken::OP_BINARY_MUL)
 				],
-				$this->valueEquals($right, 0) => $left,
 				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processSubtraction($parser, $operator_token, $left, $right)
 			},

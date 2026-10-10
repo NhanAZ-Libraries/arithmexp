@@ -240,14 +240,17 @@ final class OptimizerTest extends TestCase{
 
 	public function testDivisionOperatorStrengthReductionForRightOperandOne() : void{
 		$actual = $this->parser->parse("x / 1 + y / 1");
-		$expected = $this->unoptimized_parser->parse("x + y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(1, $actual->evaluate(["x" => true, "y" => false]));
 	}
 
 	public function testDivisionOperatorStrengthReductionForRightOperandOneWithGrouping() : void{
 		$actual = $this->parser->parse("(x + y + z) / 1");
-		$expected = $this->unoptimized_parser->parse("x + (y + z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(3, $actual->evaluate(["x" => true, "y" => false, "z" => 2]));
+	}
+
+	public function testDivisionByOneConvertsBooleanToInteger() : void{
+		self::assertSame(1, $this->parser->parse("x / 1")->evaluate(["x" => true]));
+		self::assertSame(0, $this->parser->parse("x / 1")->evaluate(["x" => false]));
 	}
 
 	public function testDivisionOperatorStrengthReductionForCommonSubExpressionsAmongOperands() : void{
@@ -348,8 +351,12 @@ final class OptimizerTest extends TestCase{
 
 	public function testSubtractionOperatorStrengthReductionForOperandZeroWithGrouping() : void{
 		$actual = $this->parser->parse("(x * y * z) - 0");
-		$expected = $this->unoptimized_parser->parse("x * (y * z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(24, $actual->evaluate(["x" => 2, "y" => 3, "z" => 4]));
+	}
+
+	public function testSubtractionByZeroConvertsBooleanToInteger() : void{
+		self::assertSame(1, $this->parser->parse("x - 0")->evaluate(["x" => true]));
+		self::assertSame(0, $this->parser->parse("x - 0")->evaluate(["x" => false]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForEqualOperands() : void{
