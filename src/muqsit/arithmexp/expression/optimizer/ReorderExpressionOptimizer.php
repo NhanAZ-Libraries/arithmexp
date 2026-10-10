@@ -14,7 +14,6 @@ use muqsit\arithmexp\function\FunctionFlags;
 use muqsit\arithmexp\Parser;
 use muqsit\arithmexp\Util;
 use function array_key_last;
-use function array_values;
 use function count;
 use function is_array;
 use function usort;
@@ -43,14 +42,20 @@ final class ReorderExpressionOptimizer implements ExpressionOptimizer{
 				continue;
 			}
 
-			$updated = array_values($entry); // copy &array
-			Util::flattenArray($updated, static fn(array $e) : bool => count($e) > 2 &&
-				($index = array_key_last($e)) !== null &&
-				$e[$index] instanceof ExpressionToken &&
-				($other_token = Util::asFunctionCallExpressionToken($parser, $e[$index])) !== null &&
-				($other_token->flags & FunctionFlags::COMMUTATIVE) > 0 &&
-				$other_token->function === $token->function
-			);
+			$updated = $entry;
+			Util::flattenArray($updated, static function(array $e) use($parser, $token) : bool{
+				if(count($e) <= 2){
+					return false;
+				}
+				$index = array_key_last($e);
+				if(!($e[$index] instanceof ExpressionToken)){
+					return false;
+				}
+				$other_token = Util::asFunctionCallExpressionToken($parser, $e[$index]);
+				return $other_token !== null &&
+					($other_token->flags & FunctionFlags::COMMUTATIVE) > 0 &&
+					$other_token->function === $token->function;
+			});
 			usort($updated, fn(ExpressionToken|array $a, ExpressionToken|array $b) : int => match(true){
 				is_array($a) => is_array($b) ? 0 : -1,
 				is_array($b) => 1,
