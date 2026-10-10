@@ -303,14 +303,17 @@ final class OptimizerTest extends TestCase{
 
 	public function testAdditionOperatorStrengthReductionForOperandZero() : void{
 		$actual = $this->parser->parse("(x + 0) + (0 + y)");
-		$expected = $this->unoptimized_parser->parse("x + y");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(1, $actual->evaluate(["x" => true, "y" => false]));
 	}
 
 	public function testAdditionOperatorStrengthReductionForOperandZeroWithGrouping() : void{
 		$actual = $this->parser->parse("(x * y * z) + 0");
-		$expected = $this->unoptimized_parser->parse("x * (y * z)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		self::assertSame(24, $actual->evaluate(["x" => 2, "y" => 3, "z" => 4]));
+	}
+
+	public function testAdditionWithZeroConvertsBooleanToInteger() : void{
+		self::assertSame(1, $this->parser->parse("x + 0")->evaluate(["x" => true]));
+		self::assertSame(0, $this->parser->parse("0 + x")->evaluate(["x" => false]));
 	}
 
 	public function testAdditionOperatorStrengthReductionForNanOperands() : void{

@@ -229,8 +229,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 				default => $this->processModulo($parser, $expression, $operator_token, $left, $right)
 			},
 			OpcodeToken::OP_BINARY_ADD => match(true){
-				$this->valueEquals($left, 0) => $right,
-				$this->valueEquals($right, 0) => $left,
 				$this->valueIsNan($left), $this->valueIsNan($right) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), NAN)],
 				default => $this->processAddition($parser, $operator_token, $left, $right)
 			},
