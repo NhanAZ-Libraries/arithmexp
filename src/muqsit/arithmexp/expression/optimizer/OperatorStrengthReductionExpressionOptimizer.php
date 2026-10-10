@@ -35,14 +35,12 @@ use const NAN;
 
 final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOptimizer{
 
-	readonly private PatternMatcher $any_non_numeric_matcher;
 	readonly private PatternMatcher $binary_operation_matcher;
 	readonly private PatternMatcher $unary_operation_matcher;
 	readonly private PatternMatcher $modulo_operation_matcher;
 	readonly private PatternMatcher $multiplication_operation_matcher;
 
 	public function __construct(){
-		$this->any_non_numeric_matcher = Pattern::not(Pattern::instanceof(NumericLiteralExpressionToken::class));
 		$this->binary_operation_matcher = new ArrayPatternMatcher([
 			AnyPatternMatcher::instance(),
 			AnyPatternMatcher::instance(),
@@ -239,7 +237,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 				default => $this->processAddition($parser, $operator_token, $left, $right)
 			},
 			OpcodeToken::OP_BINARY_SUB => match(true){
-				$this->tokensEqualByReturnValue($left, $right) && $this->any_non_numeric_matcher->matches([...$left, ...$right]) => [new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens([...$left, ...$right]), 0)],
 				$this->valueEquals($left, 0) => [
 					new NumericLiteralEXpressionToken(Util::positionContainingExpressionTokens($right), -1),
 					...$right,

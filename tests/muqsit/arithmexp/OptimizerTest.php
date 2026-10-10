@@ -372,20 +372,34 @@ final class OptimizerTest extends TestCase{
 
 	public function testSubtractionOperatorStrengthReductionForEqualOperandsWithGrouping() : void{
 		$expression = $this->parser->parse("(x * y * z) - (x * y * z)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertSame(0, $expression->evaluate(["x" => 2, "y" => 3, "z" => 4]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForCommutativelyEqualOperands() : void{
 		$expression = $this->parser->parse("(x * y) - (y * x)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertSame(0, $expression->evaluate(["x" => 2, "y" => 3]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForCommutativeFunctions() : void{
 		$expression = $this->parser->parse("min(x, y) - min(y, x)");
-		self::assertInstanceOf(ConstantExpression::class, $expression);
-		self::assertEquals(0, $expression->evaluate());
+		self::assertSame(0, $expression->evaluate(["x" => 2, "y" => 3]));
+	}
+
+	public function testSubtractionPreservesDivisionError() : void{
+		$expression = $this->parser->parse("(1 / x) - (1 / x)");
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 0]);
+	}
+
+	public function testSubtractionPreservesMissingVariableError() : void{
+		$expression = $this->parser->parse("x - x");
+		$this->expectException(InvalidArgumentException::class);
+		$expression->evaluate();
+	}
+
+	public function testSubtractionPreservesNonFiniteResult() : void{
+		$expression = $this->parser->parse("x - x");
+		self::assertNan($expression->evaluate(["x" => INF]));
 	}
 
 	public function testSubtractionOperatorStrengthReductionForNanOperands() : void{

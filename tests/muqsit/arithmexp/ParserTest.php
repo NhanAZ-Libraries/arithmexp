@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace muqsit\arithmexp;
 
+use DivisionByZeroError;
 use InvalidArgumentException;
 use muqsit\arithmexp\function\FunctionFlags;
 use muqsit\arithmexp\function\SimpleFunctionInfo;
@@ -292,7 +293,9 @@ final class ParserTest extends TestCase{
 	}
 
 	public function testDivisionByZeroBetweenNonNumericLiterals() : void{
-		TestUtil::assertParserThrows($this->parser, "y / (x - x)", ParseException::ERR_UNRESOLVABLE_EXPRESSION, 5,10);
+		$expression = $this->parser->parse("y / (x - x)");
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 2, "y" => 1]);
 	}
 
 	public function testModuloByZeroBetweenNumericLiterals() : void{
@@ -300,6 +303,8 @@ final class ParserTest extends TestCase{
 	}
 
 	public function testModuloByZeroBetweenNonNumericLiterals() : void{
-		TestUtil::assertParserThrows($this->parser, "y % (x - x)", ParseException::ERR_UNRESOLVABLE_EXPRESSION, 5,10);
+		$expression = $this->parser->parse("y % (x - x)");
+		$this->expectException(DivisionByZeroError::class);
+		$expression->evaluate(["x" => 2, "y" => 1]);
 	}
 }

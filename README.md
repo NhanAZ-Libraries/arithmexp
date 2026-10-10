@@ -10,7 +10,7 @@
 
 ## Unreleased fork compatibility note
 
-The fork's pending source revision removes unsafe rewrites of `0 / x`, `x / x`, `x ** y / x ** z`, zero multiplied by an expression, exponentiation with variable operands, and `% 1` with a variable left operand. These expressions now retain operand evaluation; a zero denominator raises `DivisionByZeroError` at evaluation time, as it does with the unoptimized parser. The exponentiation change also preserves results for negative exponents and boolean operands. Earlier fork source could fold these expressions to a value and hide an error or change the result. Other algebraic rewrites still need an error-preservation audit, so this change does not establish full equivalence between optimized and unoptimized evaluation. No stable fork release includes this change yet.
+The fork's pending source revision removes unsafe rewrites of `0 / x`, `x / x`, `x ** y / x ** z`, zero multiplied by an expression, exponentiation with variable operands, `% 1` with a variable left operand, and subtraction of identical variable expressions. These expressions now retain operand evaluation; a zero denominator raises `DivisionByZeroError` at evaluation time, as it does with the unoptimized parser. The exponentiation and subtraction changes also preserve non-finite results and relevant operand types. Earlier fork source could fold these expressions to a value and hide an error or change the result. Other algebraic rewrites still need an error-preservation audit, so this change does not establish full equivalence between optimized and unoptimized evaluation. No stable fork release includes this change yet.
 
 > [!TIP]
 > Try out arithmexp parser on the [**demo site**](https://arithmexp.cosmicpe.dev/)!
