@@ -1,18 +1,18 @@
 # arithmexp
 
 > [!NOTE]
-> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its patch makes the virion compatible with DevTools shading and fixes strict inequality, opcode token identity, and evaluation type handling. The upstream library remains the source for general Composer installation and feature documentation. The fork has no stable release until its consumer and packaging checks are complete. PHPStan runs at maximum level with two exact-line exceptions for recursive token arrays in `Parser`. A nested-operator regression checks token leaves and evaluation through 32 levels. The exceptions do not cover other error identifiers.
+> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its patch makes the virion compatible with DevTools shading and fixes strict inequality, opcode token identity, and evaluation type handling. The upstream library remains the source for general Composer installation and feature documentation. Fork version 1.1.1 was checked through the pinned Calculator consumer. PHPStan runs at maximum level with two exact-line exceptions for recursive token arrays in `Parser`. A nested-operator regression checks token leaves and evaluation through 32 levels. The exceptions do not cover other error identifiers.
 
-[![Upstream CI](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml/badge.svg)](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml)
+[![Fork CI](https://github.com/NhanAZ-Libraries/arithmexp/actions/workflows/ci.yml/badge.svg)](https://github.com/NhanAZ-Libraries/arithmexp/actions/workflows/ci.yml)
 [![Upstream latest release](https://img.shields.io/github/v/release/Muqsit/arithmexp)](https://github.com/Muqsit/arithmexp/releases/latest)
 
 [`arithmexp`](https://github.com/Muqsit/arithmexp) is a powerful mathematical expression parser and evaluator library for PHP with support for [variable substitution](https://github.com/Muqsit/arithmexp#evaluating-a-mathematical-expression), [constant declaration](https://github.com/Muqsit/arithmexp/wiki), [deterministic and non-deterministic function registration](https://github.com/Muqsit/arithmexp/wiki), and more.
 
-## Unreleased fork compatibility note
+## Fork 1.1.1 compatibility note
 
 The fork's pending source revision removes unsafe rewrites of `0 / x`, `x / x`, `x ** y / x ** z`, zero multiplied by an expression, exponentiation with variable operands, `% 1` with a variable left operand, subtraction of identical variable expressions, reordering a negative left operand in addition, multiplication by one, addition with zero, subtraction by zero, division by one, unary plus, and NaN combined with a variable expression. These expressions now retain operand evaluation order or arithmetic conversion. A zero denominator raises `DivisionByZeroError` at evaluation time, as it does with the unoptimized parser. Several changes also preserve non-finite results or arithmetic result types in their affected cases. Earlier fork source could fold these expressions to a value and hide an error or change the result.
 
-The default parser no longer registers `ReorderExpressionOptimizer`. A commutative operator does not guarantee that regrouping floating-point operands preserves the result. For example, `x + y + z` with `x = 1e16`, `y = -1e16` and `z = 1` now evaluates to `1` in both default and unoptimized parsers. The optimizer class remains available for explicit registration, but callers that opt in must validate its effects for their expressions. Division strength reduction also no longer cancels numeric factors across separate products, because that can change overflow and rounding. Other algebraic rewrites still need an error-preservation audit, so this change does not establish full equivalence between optimized and unoptimized evaluation. No stable fork release includes this change yet.
+The default parser no longer registers `ReorderExpressionOptimizer`. A commutative operator does not guarantee that regrouping floating-point operands preserves the result. For example, `x + y + z` with `x = 1e16`, `y = -1e16` and `z = 1` now evaluates to `1` in both default and unoptimized parsers. The optimizer class remains available for explicit registration, but callers that opt in must validate its effects for their expressions. Division strength reduction also no longer cancels numeric factors across separate products, because that can change overflow and rounding. Other algebraic rewrites still need an error-preservation audit, so this release does not establish full equivalence between optimized and unoptimized evaluation.
 
 Subtraction with a negative left operand now keeps its original grouping. Rewriting `(-1) - x` as a negated sum promoted the result from an integer to a float when `x` was `PHP_INT_MAX`.
 
@@ -31,6 +31,8 @@ The pending parser changes reject empty parentheses used as operands and argumen
 ```
 composer require muqsit/arithmexp
 ```
+
+That command installs the upstream Composer package. To use this fork, pin the [NhanAZ-Libraries source](https://github.com/NhanAZ-Libraries/arithmexp) as a Git submodule, as Calculator does. See [the fork changelog](CHANGELOG.md) for the tested consumer, behavior changes and rollback steps.
 
 ## Evaluating a mathematical expression
 To evaluate a mathematical expression, create a [`Parser`](https://github.com/Muqsit/arithmexp/blob/master/src/muqsit/arithmexp/Parser.php) and invoke `Parser::parse()` with an expression string to obtain a reusable [`Expression`](https://github.com/Muqsit/arithmexp/blob/master/src/muqsit/arithmexp/expression/Expression.php) object.
