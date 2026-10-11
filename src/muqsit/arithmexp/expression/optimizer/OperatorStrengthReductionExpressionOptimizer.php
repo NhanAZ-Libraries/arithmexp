@@ -25,10 +25,8 @@ use muqsit\arithmexp\token\OpcodeToken;
 use muqsit\arithmexp\token\UnaryOperatorToken;
 use muqsit\arithmexp\Util;
 use function array_filter;
-use function array_splice;
 use function count;
 use function is_array;
-use function is_float;
 use function is_int;
 
 final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOptimizer{
@@ -202,7 +200,7 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 		return match($operator_token->code){
 			OpcodeToken::OP_BINARY_DIV => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionDivisionByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
-				default => $this->processDivision($parser, $expression, $operator_token, $left, $right)
+				default => null
 			},
 			OpcodeToken::OP_BINARY_MOD => match(true){
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionModuloByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
@@ -309,83 +307,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			if($this->tokensEqualByReturnValue($left_rvalue, $right)){
 				return $left;
 			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * @param Parser $parser
-	 * @param Expression $expression
-	 * @param OpcodeExpressionToken $operator_token
-	 * @param list<ExpressionToken> $left
-	 * @param list<ExpressionToken> $right
-	 * @return list<ExpressionToken>|null
-	 */
-	private function processDivision(Parser $parser, Expression $expression, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
-		$filter = $this->multiplication_operation_matcher->matches(...);
-
-		$left_tree = Util::expressionTokenArrayToTree($parser, $left);
-		Util::flattenArray($left_tree, $filter);
-		/** @var list<ExpressionToken> $left_tree */
-
-		$right_tree = Util::expressionTokenArrayToTree($parser, $right);
-		Util::flattenArray($right_tree, $filter);
-		/** @var list<ExpressionToken> $right_tree */
-
-		$changes = 0;
-		do{
-			$changed = false;
-			foreach($left_tree as $i => $left_operand){
-				if($left_operand instanceof OpcodeExpressionToken || ($left_operand instanceof NumericLiteralExpressionToken && $left_operand->value === 1)){
-					continue;
-				}
-
-				$left_operand = $this->flattened($left_operand);
-				foreach($right_tree as $j => $right_operand){
-					if($right_operand instanceof OpcodeExpressionToken || ($right_operand instanceof NumericLiteralExpressionToken && $right_operand->value === 1)){
-						continue;
-					}
-
-					$right_operand = $this->flattened($right_operand);
-					$replacement = $this->processDivisionBetween($parser, $expression, $operator_token, $left_operand, $right_operand);
-					if($replacement === null){
-						continue;
-					}
-
-					array_splice($left_tree, $i, 1, $replacement[0]);
-					array_splice($right_tree, $j, 1, $replacement[1]);
-					$changed = true;
-					++$changes;
-					break 2;
-				}
-			}
-		}while($changed);
-		return $changes > 0 ? [...$left_tree, ...$right_tree, $operator_token] : null;
-	}
-
-	/**
-	 * @param Parser $parser
-	 * @param Expression $expression
-	 * @param OpcodeExpressionToken $operator_token
-	 * @param list<ExpressionToken> $left_operand
-	 * @param list<ExpressionToken> $right_operand
-	 * @return array{list<ExpressionToken>, list<ExpressionToken>}|null
-	 */
-	private function processDivisionBetween(Parser $parser, Expression $expression, OpcodeExpressionToken $operator_token, array $left_operand, array $right_operand) : ?array{
-		// reduce (n1 / n2) to (n / 1) where n1 and n2 are numeric, and n = n1 / n2
-		if(
-			count($left_operand) === 1 &&
-			$left_operand[0] instanceof NumericLiteralExpressionToken &&
-			count($right_operand) === 1 &&
-			$right_operand[0] instanceof NumericLiteralExpressionToken &&
-			($result = ConstantFoldingExpressionOptimizer::evaluateDeterministicTokens($parser, $expression, $operator_token, [...$left_operand, ...$right_operand])) !== null &&
-			(is_int($result) || is_float($result))
-		){
-			return [
-				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($left_operand), $result)],
-				[new NumericLiteralExpressionToken(Util::positionContainingExpressionTokens($right_operand), 1)]
-			];
 		}
 
 		return null;

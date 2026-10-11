@@ -283,6 +283,14 @@ final class OptimizerTest extends TestCase{
 		self::assertEqualsWithDelta(1 / 3, $actual->evaluate(["x" => 2, "y" => 3]), 0.00000001);
 	}
 
+	public function testDivisionPreservesFloatingPointOverflowInDenominator() : void{
+		$source = "(x * 2) / (4 * y)";
+		$variables = ["x" => 1, "y" => 1e308];
+		$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+		self::assertSame(0.0, $expected);
+		self::assertSame($expected, $this->parser->parse($source)->evaluate($variables));
+	}
+
 	public function testDivisionOperatorStrengthReductionForCommutativeFunctions() : void{
 		$expression = $this->parser->parse("min(x, y) / min(y, x)");
 		self::assertEquals(1, $expression->evaluate(["x" => 2, "y" => 3]));

@@ -181,7 +181,7 @@ final class ExpressionTest extends TestCase{
 		$fn = static fn(float $value, int $precision = 0) : float => round($value, $precision);
 		$this->parser->function_registry->registerFunction("fn", $fn);
 		$expression = $this->parser->parse("39 * fn(40 * pi) / 47");
-		self::assertEquals(39 * $fn(40 * M_PI) / 47, $expression->evaluate() + 1e-14);
+		self::assertSame(39 * $fn(40 * M_PI) / 47, $expression->evaluate());
 	}
 
 	public function testUnaryOperatorOnGroup() : void{
