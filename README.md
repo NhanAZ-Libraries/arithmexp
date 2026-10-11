@@ -14,6 +14,8 @@ The fork's pending source revision removes unsafe rewrites of `0 / x`, `x / x`, 
 
 The default parser no longer registers `ReorderExpressionOptimizer`. A commutative operator does not guarantee that regrouping floating-point operands preserves the result. For example, `x + y + z` with `x = 1e16`, `y = -1e16` and `z = 1` now evaluates to `1` in both default and unoptimized parsers. The optimizer class remains available for explicit registration, but callers that opt in must validate its effects for their expressions. Division strength reduction also no longer cancels numeric factors across separate products, because that can change overflow and rounding. Other algebraic rewrites still need an error-preservation audit, so this change does not establish full equivalence between optimized and unoptimized evaluation. No stable fork release includes this change yet.
 
+Subtraction with a negative left operand now keeps its original grouping. Rewriting `(-1) - x` as a negated sum promoted the result from an integer to a float when `x` was `PHP_INT_MAX`.
+
 The pending parser changes reject empty parentheses used as operands and argument separators consumed as operator operands with a `ParseException`. These malformed expressions previously could hang or expose an internal `RuntimeException`. Zero-argument calls such as `pi()` remain valid.
 
 > [!TIP]

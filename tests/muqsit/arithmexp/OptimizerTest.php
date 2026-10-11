@@ -461,6 +461,15 @@ final class OptimizerTest extends TestCase{
 		self::assertSame(-5, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
+	public function testNegativeLeftSubtractionPreservesIntegerBoundary() : void{
+		foreach(["(-1) - x", "-x - y"] as $source){
+			$variables = ["x" => PHP_INT_MAX, "y" => 1];
+			$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+			self::assertSame(PHP_INT_MIN, $expected);
+			self::assertSame($expected, $this->parser->parse($source)->evaluate($variables), $source);
+		}
+	}
+
 	public function testSubtractionOperatorStrengthReductionForNegativeRightOperand() : void{
 		$actual = $this->parser->parse("x - -y");
 		self::assertSame(5, $actual->evaluate(["x" => 2, "y" => 3]));
