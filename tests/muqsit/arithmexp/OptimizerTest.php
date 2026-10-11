@@ -36,6 +36,22 @@ final class OptimizerTest extends TestCase{
 		self::assertEquals(37.28 * cos(37) + sin(85) * 22 / cos(73) + sin(91) + 84.47 * cos(68) + sin(29), $expression->evaluate());
 	}
 
+	public function testDefaultOptimizationPreservesFloatingPointAdditionGrouping() : void{
+		$source = "x + y + z";
+		$variables = ["x" => 1e16, "y" => -1e16, "z" => 1.0];
+		$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+		self::assertSame(1.0, $expected);
+		self::assertSame($expected, $this->parser->parse($source)->evaluate($variables));
+	}
+
+	public function testDefaultOptimizationPreservesFloatingPointMultiplicationGrouping() : void{
+		$source = "x * y * z";
+		$variables = ["x" => 1e308, "y" => 1e308, "z" => 1e-308];
+		$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+		self::assertSame(INF, $expected);
+		self::assertSame($expected, $this->parser->parse($source)->evaluate($variables));
+	}
+
 	public function testConstantFoldingOptimizationForNumericLiteral() : void{
 		$expression = $this->parser->parse("1.23");
 		self::assertInstanceOf(ConstantExpression::class, $expression);
@@ -55,9 +71,13 @@ final class OptimizerTest extends TestCase{
 	}
 
 	public function testConstantPropagationOptimization() : void{
-		$actual = $this->parser->parse("37.28 * cos(x) + sin(85) * 22 / cos(73) + sin(91) + 84.47 * cos(z) + sin(32)");
-		$expected = $this->unoptimized_parser->parse("(cos(x) * 37.28) + ((cos(z) * 84.47) + 5.919166371412)");
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$source = "37.28 * cos(x) + sin(85) * 22 / cos(73) + sin(91) + 84.47 * cos(z) + sin(32)";
+		$actual = $this->parser->parse($source);
+		$plain = $this->unoptimized_parser->parse($source);
+		self::assertLessThan(count($plain->getPostfixExpressionTokens()), count($actual->getPostfixExpressionTokens()));
+		foreach([["x" => 0.0, "z" => 0.0], ["x" => 1.0, "z" => 2.0]] as $variables){
+			self::assertSame($plain->evaluate($variables), $actual->evaluate($variables));
+		}
 	}
 
 	public function testDivisionConstantFoldingForRightOperandNan() : void{
@@ -85,8 +105,9 @@ final class OptimizerTest extends TestCase{
 	}
 
 	public function testNoOptimization() : void{
-		$actual = $this->parser->parse("37.28 * cos(mt_rand(x, y) / 23.84) ** 3");
-		$expected = $this->unoptimized_parser->parse("cos(mt_rand(x, y) / 23.84) ** 3 * 37.28");
+		$source = "37.28 * cos(mt_rand(x, y) / 23.84) ** 3";
+		$actual = $this->parser->parse($source);
+		$expected = $this->unoptimized_parser->parse($source);
 		TestUtil::assertExpressionsEqual($expected, $actual);
 	}
 
@@ -459,16 +480,12 @@ final class OptimizerTest extends TestCase{
 		self::assertSame(0, $actual->evaluate(["x" => false]));
 	}
 
-	public function testNegativeOperatorStrengthReductionForCommutativeFunctions() : void{
+	public function testRepeatedNegationPreservesArithmetic() : void{
 		$actual = $this->parser->parse("---x");
-
-		$expected = $this->unoptimized_parser->parse("x * 1");
-		$expected = new RawExpression($expected->getExpression(), array_map(
-			static fn(ExpressionToken $token) : ExpressionToken => $token instanceof NumericLiteralExpressionToken && $token->value === 1 ? new NumericLiteralExpressionToken($token->getPos(), -1) : $token,
-			$expected->getPostfixExpressionTokens()
-		));
-
-		TestUtil::assertExpressionsEqual($expected, $actual);
+		$plain = $this->unoptimized_parser->parse("---x");
+		foreach([2, -3, true, false] as $value){
+			self::assertSame($plain->evaluate(["x" => $value]), $actual->evaluate(["x" => $value]));
+		}
 	}
 
 	public function testIdempotenceFoldingForSingleArgumentFunction() : void{
@@ -502,7 +519,7 @@ final class OptimizerTest extends TestCase{
 
 	public function testIdempotenceFoldingForMultiArgumentFunctionWithCommutativityAndDifferingArgumentCount() : void{
 		$actual = $this->parser->parse("min(x, min(y, min(z, w)))");
-		$expected = $this->unoptimized_parser->parse("min(w, x, y, z)");
+		$expected = $this->unoptimized_parser->parse("min(x, y, z, w)");
 		TestUtil::assertExpressionsEqual($expected, $actual);
 		self::assertEquals(3, $actual->evaluate(["w" => 3, "x" => 4, "y" => 5, "z" => 6]));
 		self::assertEquals(3, $actual->evaluate(["w" => 4, "x" => 5, "y" => 6, "z" => 3]));

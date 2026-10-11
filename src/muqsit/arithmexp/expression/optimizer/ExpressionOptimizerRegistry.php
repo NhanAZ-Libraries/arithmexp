@@ -12,7 +12,6 @@ final class ExpressionOptimizerRegistry{
 
 	public static function createDefault() : self{
 		$registry = new self();
-		$registry->register("reorder", new ReorderExpressionOptimizer());
 		$registry->register("operator_strength_reduction", new OperatorStrengthReductionExpressionOptimizer());
 		$registry->register("constant_folding", new ConstantFoldingExpressionOptimizer());
 		$registry->register("idempotence_folding", new IdempotenceFoldingExpressionOptimizer());
