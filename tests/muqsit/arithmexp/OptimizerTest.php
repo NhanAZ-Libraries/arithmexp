@@ -11,6 +11,7 @@ use muqsit\arithmexp\expression\ConstantExpression;
 use muqsit\arithmexp\expression\RawExpression;
 use muqsit\arithmexp\expression\optimizer\ExpressionTokenTree;
 use muqsit\arithmexp\expression\token\ExpressionToken;
+use muqsit\arithmexp\expression\token\FunctionCallExpressionToken;
 use muqsit\arithmexp\expression\token\NumericLiteralExpressionToken;
 use muqsit\arithmexp\function\SimpleFunctionInfo;
 use muqsit\arithmexp\operator\assignment\RightOperatorAssignment;
@@ -511,6 +512,14 @@ final class OptimizerTest extends TestCase{
 
 		self::assertSame([$token], $tree->flatten());
 		self::assertCount(513, iterator_to_array($tree->traversePostOrder(), false));
+	}
+
+	public function testExpressionTokenTreeRejectsMissingFunctionOperands() : void{
+		$operand = new NumericLiteralExpressionToken(new Position(0, 1), 7);
+		$function = new FunctionCallExpressionToken(new Position(1, 2), "sum", 2, static fn() : int => 0, 0);
+
+		$this->expectException(InvalidArgumentException::class);
+		ExpressionTokenTree::fromPostfix($this->parser, [$operand, $function]);
 	}
 
 	public function testIdempotenceFoldingForSingleArgumentFunctionWithoutCommutativity() : void{

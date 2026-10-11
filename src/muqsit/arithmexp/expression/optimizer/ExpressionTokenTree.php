@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace muqsit\arithmexp\expression\optimizer;
 
 use Generator;
+use InvalidArgumentException;
 use muqsit\arithmexp\expression\token\ExpressionToken;
 use muqsit\arithmexp\Parser;
 use muqsit\arithmexp\Util;
@@ -29,6 +30,9 @@ final class ExpressionTokenTree{
 			$call = Util::asFunctionCallExpressionToken($parser, $operand);
 			if($call === null){
 				continue;
+			}
+			if($call->argument_count < 0 || $call->argument_count >= count($root->items)){
+				throw new InvalidArgumentException("Postfix call {$call->name} has {$call->argument_count} arguments but insufficient operands");
 			}
 
 			$replace = $call->argument_count + 1;
