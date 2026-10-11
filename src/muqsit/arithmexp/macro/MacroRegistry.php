@@ -54,7 +54,7 @@ final class MacroRegistry{
 			0 => throw ParseException::unresolvableFcallTooLessParams($expression, $token->getPos(), 1, 0),
 			1 => [$args[0]],
 			default => null
-		}, FunctionFlags::COMMUTATIVE | FunctionFlags::DETERMINISTIC | FunctionFlags::IDEMPOTENT);
+		}, FunctionFlags::DETERMINISTIC);
 
 		$registry->registerFunction("min", static function(int|float ...$nums) : int|float{
 			assert(count($nums) >= 2);
@@ -63,7 +63,7 @@ final class MacroRegistry{
 			0 => throw ParseException::unresolvableFcallTooLessParams($expression, $token->getPos(), 1, 0),
 			1 => [$args[0]],
 			default => null
-		}, FunctionFlags::COMMUTATIVE | FunctionFlags::DETERMINISTIC | FunctionFlags::IDEMPOTENT);
+		}, FunctionFlags::DETERMINISTIC);
 
 		$registry->registerFunction("pi", static fn() : float => M_PI, static fn(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, array $args) : array => [
 			new NumericLiteralToken($token->getPos(), M_PI)

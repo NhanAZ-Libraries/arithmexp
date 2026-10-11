@@ -16,6 +16,8 @@ The default parser no longer registers `ReorderExpressionOptimizer`. A commutati
 
 Subtraction with a negative left operand now keeps its original grouping. Rewriting `(-1) - x` as a negated sum promoted the result from an integer to a float when `x` was `PHP_INT_MAX`.
 
+Nested `min()` and `max()` calls also retain their argument order and grouping. Flattening them changed results when an argument was NaN, because PHP's comparison behavior for NaN depends on evaluation order.
+
 The pending parser changes reject empty parentheses used as operands and argument separators consumed as operator operands with a `ParseException`. These malformed expressions previously could hang or expose an internal `RuntimeException`. Zero-argument calls such as `pi()` remain valid.
 
 > [!TIP]

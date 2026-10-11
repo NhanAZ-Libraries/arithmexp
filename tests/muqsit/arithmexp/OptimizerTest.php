@@ -537,15 +537,32 @@ final class OptimizerTest extends TestCase{
 		TestUtil::assertExpressionsEqual($expected, $actual);
 	}
 
-	public function testIdempotenceFoldingForMultiArgumentFunctionWithCommutativity() : void{
+	public function testNestedSingleArgumentMinIsSimplified() : void{
 		$actual = $this->parser->parse("min(x, min(y), min(min(z)))");
 		$expected = $this->unoptimized_parser->parse("min(x, y, z)");
 		TestUtil::assertExpressionsEqual($expected, $actual);
 	}
 
-	public function testIdempotenceFoldingForMultiArgumentFunctionWithCommutativityAndDifferingArgumentCount() : void{
-		$actual = $this->parser->parse("min(x, min(y, min(z, w)))");
-		$expected = $this->unoptimized_parser->parse("min(x, y, z, w)");
+	public function testNestedMinPreservesNanEvaluationOrder() : void{
+		$source = "min(x, min(y, z))";
+		$variables = ["x" => 0, "y" => NAN, "z" => 1];
+		$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+		self::assertSame(0, $expected);
+		self::assertSame($expected, $this->parser->parse($source)->evaluate($variables));
+	}
+
+	public function testNestedMaxPreservesNanEvaluationOrder() : void{
+		$source = "max(x, max(y, z))";
+		$variables = ["x" => -1, "y" => NAN, "z" => 0];
+		$expected = $this->unoptimized_parser->parse($source)->evaluate($variables);
+		self::assertSame(-1, $expected);
+		self::assertSame($expected, $this->parser->parse($source)->evaluate($variables));
+	}
+
+	public function testNestedMinPreservesArgumentStructure() : void{
+		$source = "min(x, min(y, min(z, w)))";
+		$actual = $this->parser->parse($source);
+		$expected = $this->unoptimized_parser->parse($source);
 		TestUtil::assertExpressionsEqual($expected, $actual);
 		self::assertEquals(3, $actual->evaluate(["w" => 3, "x" => 4, "y" => 5, "z" => 6]));
 		self::assertEquals(3, $actual->evaluate(["w" => 4, "x" => 5, "y" => 6, "z" => 3]));
