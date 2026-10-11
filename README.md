@@ -1,7 +1,7 @@
 # arithmexp
 
 > [!NOTE]
-> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its patch makes the virion compatible with DevTools shading and fixes strict inequality, opcode token identity, and evaluation type handling. The upstream library remains the source for general Composer installation and feature documentation. The fork has no stable release until its required validation is complete; PHPStan at maximum level still reports source errors.
+> This NhanAZ-Libraries fork preserves the [Muqsit upstream project](https://github.com/Muqsit/arithmexp). Its patch makes the virion compatible with DevTools shading and fixes strict inequality, opcode token identity, and evaluation type handling. The upstream library remains the source for general Composer installation and feature documentation. The fork has no stable release until its consumer and packaging checks are complete. PHPStan runs at maximum level with two exact-line exceptions for recursive token arrays in `Parser`. A nested-operator regression checks token leaves and evaluation through 32 levels. The exceptions do not cover other error identifiers.
 
 [![Upstream CI](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml/badge.svg)](https://github.com/Muqsit/arithmexp/actions/workflows/ci.yml)
 [![Upstream latest release](https://img.shields.io/github/v/release/Muqsit/arithmexp)](https://github.com/Muqsit/arithmexp/releases/latest)

@@ -214,6 +214,8 @@ final class Parser{
 				}
 			}
 
+			// PHPStan cannot express recursive token-array nesting; ParserTest checks deep token leaves.
+			// @phpstan-ignore parameterByRef.type
 			array_splice($tokens, $i, 1 + ($j - $i), match(count($group)){
 				0 => [],
 				1 => $group,
@@ -289,6 +291,8 @@ final class Parser{
 							break;
 						}
 
+						// The replacement is a nested operator group of Token leaves, checked by ParserTest.
+						// @phpstan-ignore argument.type
 						$state->splice($begin, count($replacement), [$replacement]);
 					}
 				}

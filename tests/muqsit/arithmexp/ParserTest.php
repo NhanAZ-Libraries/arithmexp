@@ -51,6 +51,32 @@ final class ParserTest extends TestCase{
 		self::assertSame(7, $this->parser->parse($expression)->evaluate());
 	}
 
+	public function testDeeplyNestedOperatorTreeContainsOnlyTokenLeaves() : void{
+		$expression = "1";
+		for($i = 0; $i < 32; ++$i){
+			$expression = "1 + ({$expression})";
+		}
+		$tokens = $this->uo_parser->scanner->scan($expression);
+		$this->uo_parser->processTokens($expression, $tokens);
+		$stack = [[$tokens, 0]];
+		$max_depth = 0;
+		while($stack !== []){
+			[$group, $depth] = array_pop($stack);
+			self::assertTrue(array_is_list($group));
+			$max_depth = max($max_depth, $depth);
+			foreach($group as $entry){
+				if(is_array($entry)){
+					$stack[] = [$entry, $depth + 1];
+				}else{
+					self::assertInstanceOf(Token::class, $entry);
+				}
+			}
+		}
+		self::assertGreaterThanOrEqual(32, $max_depth);
+		self::assertSame(33, $this->uo_parser->parse($expression)->evaluate());
+		self::assertSame(33, $this->parser->parse($expression)->evaluate());
+	}
+
 	public function testBinaryOperatorsOfSamePrecedence() : void{
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("Cannot process operators with same precedence (128) but different assignment types (0, 1)");
