@@ -8,6 +8,7 @@ use Closure;
 use Generator;
 use InvalidArgumentException;
 use muqsit\arithmexp\expression\token\ExpressionToken;
+use muqsit\arithmexp\expression\optimizer\ExpressionTokenTree;
 use muqsit\arithmexp\expression\token\FunctionCallExpressionToken;
 use muqsit\arithmexp\expression\token\OpcodeExpressionToken;
 use muqsit\arithmexp\token\BinaryOperatorToken;
@@ -99,21 +100,10 @@ final class Util{
 	 * @param list<ExpressionToken> $postfix_expression_tokens
 	 * @param int $offset
 	 * @param int|null $length Number of tokens to read from the offset
-	 * @return list<ExpressionToken|list<ExpressionToken>>
+	 * @return list<ExpressionToken|array<array-key, mixed>>
 	 */
 	public static function expressionTokenArrayToTree(Parser $parser, array $postfix_expression_tokens, int $offset = 0, ?int $length = null) : array{
-		/** @var list<ExpressionToken|list<ExpressionToken>> $tree */
-		$tree = [];
-		foreach(array_slice($postfix_expression_tokens, $offset, $length) as $operand){
-			$tree[] = $operand;
-			$token = self::asFunctionCallExpressionToken($parser, $operand);
-			if($token !== null){
-				$replace = $token->argument_count + 1;
-				$args = array_slice($tree, -$replace, $replace);
-				array_splice($tree, -$replace, $replace, count($args) === 1 ? $args : [$args]);
-			}
-		}
-		return $tree;
+		return ExpressionTokenTree::fromPostfix($parser, array_slice($postfix_expression_tokens, $offset, $length), false)->toLegacyArray();
 	}
 
 	/**

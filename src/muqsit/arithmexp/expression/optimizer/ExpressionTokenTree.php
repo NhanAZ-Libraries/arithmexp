@@ -23,7 +23,7 @@ final class ExpressionTokenTree{
 	/**
 	 * @param list<ExpressionToken> $tokens
 	 */
-	public static function fromPostfix(Parser $parser, array $tokens) : self{
+	public static function fromPostfix(Parser $parser, array $tokens, bool $requireOperands = true) : self{
 		$root = new self([]);
 		foreach($tokens as $operand){
 			$root->items[] = $operand;
@@ -31,7 +31,7 @@ final class ExpressionTokenTree{
 			if($call === null){
 				continue;
 			}
-			if($call->argument_count < 0 || $call->argument_count >= count($root->items)){
+			if($call->argument_count < 0 || ($requireOperands && $call->argument_count >= count($root->items))){
 				throw new InvalidArgumentException("Postfix call {$call->name} has {$call->argument_count} arguments but insufficient operands");
 			}
 
@@ -70,6 +70,15 @@ final class ExpressionTokenTree{
 			}else{
 				$result[] = $item;
 			}
+		}
+		return $result;
+	}
+
+	/** @return list<ExpressionToken|array<array-key, mixed>> */
+	public function toLegacyArray() : array{
+		$result = [];
+		foreach($this->items as $item){
+			$result[] = $item instanceof self ? $item->toLegacyArray() : $item;
 		}
 		return $result;
 	}

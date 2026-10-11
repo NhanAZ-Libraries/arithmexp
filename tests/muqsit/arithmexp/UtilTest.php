@@ -44,4 +44,16 @@ final class UtilTest extends TestCase{
 		self::assertSame([$tokens[2], $tokens[3]], Util::expressionTokenArrayToTree($parser, $tokens, 2));
 		self::assertSame([], Util::expressionTokenArrayToTree($parser, $tokens, 2, 0));
 	}
+
+	public function testExpressionTokenArrayToTreeKeepsIncompletePostfixFragment() : void{
+		$parser = Parser::createUnoptimized();
+		$tokens = $parser->parse('sqrt(9)')->getPostfixExpressionTokens();
+		self::assertSame([$tokens[1]], Util::expressionTokenArrayToTree($parser, $tokens, 1));
+	}
+
+	public function testExpressionTokenArrayToTreePreservesNestedGroups() : void{
+		$parser = Parser::createUnoptimized();
+		$tokens = $parser->parse('max(1, min(2, 3))')->getPostfixExpressionTokens();
+		self::assertSame([[$tokens[0], [$tokens[1], $tokens[2], $tokens[3]], $tokens[4]]], Util::expressionTokenArrayToTree($parser, $tokens));
+	}
 }
