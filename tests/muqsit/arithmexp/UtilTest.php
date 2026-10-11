@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace muqsit\arithmexp;
 
+use InvalidArgumentException;
 use muqsit\arithmexp\expression\token\NumericLiteralExpressionToken;
 use PHPUnit\Framework\TestCase;
 
@@ -22,6 +23,12 @@ final class UtilTest extends TestCase{
 
 		self::assertSame([[5], [2, 3], [4, [5, 6]], [1, [2, 3]], [[1, [2, 3]], [4, [5, 6]]]], $visited);
 		self::assertSame([[1, [2, 3]], [4, [5, 6]]], $tree);
+	}
+
+	public function testNestedTraversalRejectsNonListChild() : void{
+		$tree = [[0 => 1, 2 => 3]];
+		$this->expectException(InvalidArgumentException::class);
+		iterator_to_array(Util::traverseNestedArray($tree), false);
 	}
 
 	public function testExpressionTokenArrayToTreeUsesLengthRelativeToOffset() : void{

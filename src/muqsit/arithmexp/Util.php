@@ -6,6 +6,7 @@ namespace muqsit\arithmexp;
 
 use Closure;
 use Generator;
+use InvalidArgumentException;
 use muqsit\arithmexp\expression\token\ExpressionToken;
 use muqsit\arithmexp\expression\token\FunctionCallExpressionToken;
 use muqsit\arithmexp\expression\token\OpcodeExpressionToken;
@@ -31,15 +32,19 @@ final class Util{
 
 		$queue = [&$array];
 		while(($index = array_key_first($queue)) !== null){
-			$array = &$queue[$index];
+			$entry = &$queue[$index];
 			unset($queue[$index]);
+			if(!array_is_list($entry)){
+				throw new InvalidArgumentException("Nested array must be a list");
+			}
 
-			$stack[] = &$array;
-			for($i = 0, $count = count($array); $i < $count; ++$i){
-				if(is_array($array[$i])){
-					$queue[] = &$array[$i];
+			$stack[] = &$entry;
+			for($i = 0, $count = count($entry); $i < $count; ++$i){
+				if(is_array($entry[$i])){
+					$queue[] = &$entry[$i];
 				}
 			}
+			unset($entry);
 		}
 
 		$index = count($stack);
