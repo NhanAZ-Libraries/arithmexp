@@ -14,11 +14,6 @@ use muqsit\arithmexp\expression\token\OpcodeExpressionToken;
 use muqsit\arithmexp\expression\token\VariableExpressionToken;
 use muqsit\arithmexp\ParseException;
 use muqsit\arithmexp\Parser;
-use muqsit\arithmexp\pattern\matcher\AnyPatternMatcher;
-use muqsit\arithmexp\pattern\matcher\ArrayPatternMatcher;
-use muqsit\arithmexp\pattern\matcher\OpcodePatternMatcher;
-use muqsit\arithmexp\pattern\matcher\PatternMatcher;
-use muqsit\arithmexp\pattern\Pattern;
 use muqsit\arithmexp\Position;
 use muqsit\arithmexp\token\BinaryOperatorToken;
 use muqsit\arithmexp\token\OpcodeToken;
@@ -26,87 +21,77 @@ use muqsit\arithmexp\token\UnaryOperatorToken;
 use muqsit\arithmexp\Util;
 use function array_filter;
 use function count;
-use function is_array;
+use function in_array;
 use function is_int;
 
 final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOptimizer{
 
-	readonly private PatternMatcher $binary_operation_matcher;
-	readonly private PatternMatcher $unary_operation_matcher;
-	readonly private PatternMatcher $modulo_operation_matcher;
+	public function __construct(){}
 
-	public function __construct(){
-		$this->binary_operation_matcher = new ArrayPatternMatcher([
-			AnyPatternMatcher::instance(),
-			AnyPatternMatcher::instance(),
-			OpcodePatternMatcher::setOf([
-				OpcodeToken::OP_BINARY_ADD,
-				OpcodeToken::OP_BINARY_DIV,
-				OpcodeToken::OP_BINARY_MOD,
-				OpcodeToken::OP_BINARY_SUB
-			])
-		]);
-		$this->unary_operation_matcher = new ArrayPatternMatcher([
-			AnyPatternMatcher::instance(),
-			OpcodePatternMatcher::setOf([OpcodeToken::OP_UNARY_NOT, OpcodeToken::OP_UNARY_NVE, OpcodeToken::OP_UNARY_PVE])
-		]);
-		$this->modulo_operation_matcher = new ArrayPatternMatcher([
-			AnyPatternMatcher::instance(),
-			AnyPatternMatcher::instance(),
-			OpcodePatternMatcher::setOf([OpcodeToken::OP_BINARY_MOD])
-		]);
+	/**
+	 * @param list<OpcodeToken::OP_*> $codes
+	 */
+	private function matchesOpcodeTree(ExpressionTokenTree $entry, int $size, array $codes) : bool{
+		return count($entry->items) === $size
+			&& $entry->items[$size - 1] instanceof OpcodeExpressionToken
+			&& in_array($entry->items[$size - 1]->code, $codes, true);
 	}
 
 	/**
-	 * @param ExpressionToken|list<ExpressionToken|list<ExpressionToken>> $entry
+	 * @param ExpressionToken|ExpressionTokenTree $entry
 	 * @return list<ExpressionToken>
 	 */
-	private function flattened(array|ExpressionToken $entry) : array{
-		if(is_array($entry)){
-			Util::flattenArray($entry);
-		}else{
-			$entry = [$entry];
-		}
-		return $entry;
+	private function flattened(ExpressionToken|ExpressionTokenTree $entry) : array{
+		return $entry instanceof ExpressionTokenTree ? $entry->flatten() : [$entry];
 	}
 
 	public function run(Parser $parser, Expression $expression) : Expression{
-		$postfix_expression_tokens = Util::expressionTokenArrayToTree($parser, $expression->getPostfixExpressionTokens());
+		$tree = ExpressionTokenTree::fromPostfix($parser, $expression->getPostfixExpressionTokens());
 		$filter = static fn(ExpressionToken $token) : bool => !$token->isDeterministic();
 
 		$changes = 0;
-		/** @var array{ExpressionToken|list<ExpressionToken>, ExpressionToken|list<ExpressionToken>, OpcodeExpressionToken} $entry */
-		foreach(Pattern::findMatching($this->binary_operation_matcher, $postfix_expression_tokens) as &$entry){
-			$left = $this->flattened($entry[0]);
-			$right = $this->flattened($entry[1]);
+		foreach($tree->traversePostOrder() as $entry){
+			if(!$this->matchesOpcodeTree($entry, 3, [OpcodeToken::OP_BINARY_ADD, OpcodeToken::OP_BINARY_DIV, OpcodeToken::OP_BINARY_MOD, OpcodeToken::OP_BINARY_SUB])){
+				continue;
+			}
+			$operator = $entry->items[2];
+			if(!($operator instanceof OpcodeExpressionToken)){
+				continue;
+			}
+			$left = $this->flattened($entry->items[0]);
+			$right = $this->flattened($entry->items[1]);
 			if(count(array_filter([...$left, ...$right], $filter)) === 0){
 				continue;
 			}
 
-			$replacement = $this->processBinaryExpression($parser, $expression, $entry[2], $left, $right);
+			$replacement = $this->processBinaryExpression($parser, $expression, $operator, $left, $right);
 			if($replacement !== null){
-				$entry = $replacement;
+				$entry->items = $replacement;
 				++$changes;
 			}
 		}
-		unset($entry);
 
-		/** @var array{ExpressionToken|list<ExpressionToken>, OpcodeExpressionToken} $entry */
-		foreach(Pattern::findMatching($this->unary_operation_matcher, $postfix_expression_tokens) as &$entry){
-			$operand = $this->flattened($entry[0]);
+		foreach($tree->traversePostOrder() as $entry){
+			if(!$this->matchesOpcodeTree($entry, 2, [OpcodeToken::OP_UNARY_NOT, OpcodeToken::OP_UNARY_NVE, OpcodeToken::OP_UNARY_PVE])){
+				continue;
+			}
+			$operator = $entry->items[1];
+			if(!($operator instanceof OpcodeExpressionToken)){
+				continue;
+			}
+			$operand = $this->flattened($entry->items[0]);
 			if(count(array_filter($operand, $filter)) === 0){
 				continue;
 			}
 
-			$replacement = $this->processUnaryExpression($parser, $entry[1], $operand);
+			$replacement = $this->processUnaryExpression($parser, $operator, $operand);
 			if($replacement !== null){
-				$entry = $replacement;
+				$entry->items = $replacement;
 				++$changes;
 			}
 		}
-		unset($entry);
 
-		Util::flattenArray($postfix_expression_tokens);
+		$postfix_expression_tokens = $tree->flatten();
 		return match(true){
 			count($postfix_expression_tokens) === 1 && $postfix_expression_tokens[0] instanceof NumericLiteralExpressionToken => new ConstantExpression($expression->getExpression(), $postfix_expression_tokens[0]->value),
 			default => $changes > 0 ? new RawExpression($expression->getExpression(), $postfix_expression_tokens) : $expression
@@ -222,9 +207,9 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	 */
 	private function processModulo(Parser $parser, Expression $expression, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
 		// reduce (x % y) % y to (x % y)
-		[$left_tree] = Util::expressionTokenArrayToTree($parser, $left);
-		if(is_array($left_tree) && $this->modulo_operation_matcher->matches($left_tree)){
-			$left_rvalue = $this->flattened($left_tree[1]);
+		$left_tree = ExpressionTokenTree::fromPostfix($parser, $left)->items[0] ?? null;
+		if($left_tree instanceof ExpressionTokenTree && $this->matchesOpcodeTree($left_tree, 3, [OpcodeToken::OP_BINARY_MOD])){
+			$left_rvalue = $this->flattened($left_tree->items[1]);
 			if($this->tokensEqualByReturnValue($left_rvalue, $right)){
 				return $left;
 			}
