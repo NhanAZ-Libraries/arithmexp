@@ -157,7 +157,15 @@ final class ParserTest extends TestCase{
 		TestUtil::assertExpressionsEqual($this->uo_parser->parse("min(x, y)"), $this->uo_parser->parse("min(x, y)"));
 
 		TestUtil::assertExpressionsEqual($this->uo_parser->parse("x ** y"), $this->uo_parser->parse("pow(x, y)"));
-		TestUtil::assertExpressionsEqual($this->uo_parser->parse("x ** 0.5"), $this->uo_parser->parse("sqrt(x)"));
+	}
+
+	public function testSqrtPreservesNegativeZero() : void{
+		$expected = json_encode(sqrt(-0.0), JSON_PRESERVE_ZERO_FRACTION);
+		self::assertSame("-0.0", $expected);
+		self::assertSame($expected, json_encode($this->uo_parser->parse("sqrt(x)")->evaluate(["x" => -0.0]), JSON_PRESERVE_ZERO_FRACTION));
+		self::assertSame($expected, json_encode($this->uo_parser->parse("sqrt(-0.0)")->evaluate(), JSON_PRESERVE_ZERO_FRACTION));
+		self::assertSame($expected, json_encode(Parser::createDefault()->parse("sqrt(x)")->evaluate(["x" => -0.0]), JSON_PRESERVE_ZERO_FRACTION));
+		self::assertSame($expected, json_encode(Parser::createDefault()->parse("sqrt(-0.0)")->evaluate(), JSON_PRESERVE_ZERO_FRACTION));
 	}
 
 	public function testFunctionLikeMacroArgumentReplacer() : void{

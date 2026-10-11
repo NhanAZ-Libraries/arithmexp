@@ -18,6 +18,8 @@ Subtraction with a negative left operand now keeps its original grouping. Rewrit
 
 Nested `min()` and `max()` calls also retain their argument order and grouping. Flattening them changed results when an argument was NaN, because PHP's comparison behavior for NaN depends on evaluation order.
 
+`sqrt()` now calls PHP's square-root function directly. Rewriting it as exponentiation changed the sign of negative zero.
+
 The pending parser changes reject empty parentheses used as operands and argument separators consumed as operator operands with a `ParseException`. These malformed expressions previously could hang or expose an internal `RuntimeException`. Zero-argument calls such as `pi()` remain valid.
 
 > [!TIP]

@@ -96,11 +96,6 @@ final class MacroRegistry{
 			return [$args[0], $args[1], new NumericLiteralToken($argument->getPos(), $replacement), $token];
 		}, FunctionFlags::DETERMINISTIC | FunctionFlags::IDEMPOTENT);
 
-		$registry->registerFunction("sqrt", sqrt(...), static fn(Parser $parser, string $expression, Token $token, string $function_name, int $argument_count, array $args) : array => [
-			$args[0],
-			new NumericLiteralToken($token->getPos(), 0.5),
-			new BinaryOperatorToken($token->getPos(), "**")
-		], FunctionFlags::DETERMINISTIC);
 		return $registry;
 	}
 

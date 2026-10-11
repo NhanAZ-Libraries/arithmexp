@@ -45,6 +45,7 @@ final class FunctionRegistry{
 		$registry->registerFunction("rad2deg", rad2deg(...), FunctionFlags::DETERMINISTIC);
 		$registry->registerFunction("sin", sin(...), FunctionFlags::DETERMINISTIC);
 		$registry->registerFunction("sinh", sinh(...), FunctionFlags::DETERMINISTIC);
+		$registry->registerFunction("sqrt", sqrt(...), FunctionFlags::DETERMINISTIC);
 		$registry->registerFunction("tan", tan(...), FunctionFlags::DETERMINISTIC);
 		$registry->registerFunction("tanh", tanh(...), FunctionFlags::DETERMINISTIC);
 		return $registry;
