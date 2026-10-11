@@ -370,6 +370,17 @@ final class OptimizerTest extends TestCase{
 		self::assertSame(-1, $actual->evaluate(["x" => 2, "y" => 3]));
 	}
 
+	public function testNegativeRightOperandPreservesIntegerOverflow() : void{
+		foreach(["x + (-y)", "x + -y", "x - (-y)", "x - -y"] as $source){
+			$optimized = $this->parser->parse($source);
+			$plain = $this->unoptimized_parser->parse($source);
+			foreach([PHP_INT_MIN, -1, 0, PHP_INT_MAX] as $x){
+				$variables = ["x" => $x, "y" => PHP_INT_MIN];
+				self::assertSame($plain->evaluate($variables), $optimized->evaluate($variables), $source . " with x=" . $x);
+			}
+		}
+	}
+
 	public function testAdditionOperatorStrengthReductionForNegativeOperands() : void{
 		$actual = $this->parser->parse("-x + -y");
 		self::assertSame(-5, $actual->evaluate(["x" => 2, "y" => 3]));

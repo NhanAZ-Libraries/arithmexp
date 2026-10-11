@@ -34,7 +34,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 	readonly private PatternMatcher $binary_operation_matcher;
 	readonly private PatternMatcher $unary_operation_matcher;
 	readonly private PatternMatcher $modulo_operation_matcher;
-	readonly private PatternMatcher $multiplication_operation_matcher;
 
 	public function __construct(){
 		$this->binary_operation_matcher = new ArrayPatternMatcher([
@@ -55,11 +54,6 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 			AnyPatternMatcher::instance(),
 			AnyPatternMatcher::instance(),
 			OpcodePatternMatcher::setOf([OpcodeToken::OP_BINARY_MOD])
-		]);
-		$this->multiplication_operation_matcher = new ArrayPatternMatcher([
-			AnyPatternMatcher::instance(),
-			AnyPatternMatcher::instance(),
-			OpcodePatternMatcher::setOf([OpcodeToken::OP_BINARY_MUL])
 		]);
 	}
 
@@ -206,70 +200,16 @@ final class OperatorStrengthReductionExpressionOptimizer implements ExpressionOp
 				$this->valueEquals($right, 0) => throw ParseException::unresolvableExpressionModuloByZero($expression->getExpression(), Util::positionContainingExpressionTokens($right)),
 				default => $this->processModulo($parser, $expression, $operator_token, $left, $right)
 			},
-			OpcodeToken::OP_BINARY_ADD => $this->processAddition($parser, $operator_token, $left, $right),
 			OpcodeToken::OP_BINARY_SUB => match(true){
 				$this->valueEquals($left, 0) => [
 					new NumericLiteralEXpressionToken(Util::positionContainingExpressionTokens($right), -1),
 					...$right,
 					$this->buildOpcodeToken($parser, Util::positionContainingExpressionTokens($right), OpcodeToken::OP_BINARY_MUL)
 				],
-				default => $this->processSubtraction($parser, $operator_token, $left, $right)
+				default => null
 			},
 			default => null
 		};
-	}
-
-	/**
-	 * @param Parser $parser
-	 * @param OpcodeExpressionToken $operator_token
-	 * @param list<ExpressionToken> $left
-	 * @param list<ExpressionToken> $right
-	 * @return list<ExpressionToken>|null
-	 */
-	private function processAddition(Parser $parser, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
-		$filter = $this->multiplication_operation_matcher->matches(...);
-
-		$right_tree = Util::expressionTokenArrayToTree($parser, $right);
-		Util::flattenArray($right_tree, $filter);
-		foreach($right_tree as $index => $right_operand){
-			if($right_operand instanceof NumericLiteralExpressionToken && $right_operand->value < 0){
-				$right_tree[$index] = new NumericLiteralExpressionToken($right_operand->getPos(), -$right_operand->value);
-				return [
-					...$left,
-					...$this->flattened($right_tree),
-					$this->buildOpcodeToken($parser, $operator_token->getPos(), OpcodeToken::OP_BINARY_SUB)
-				];
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * @param Parser $parser
-	 * @param OpcodeExpressionToken $operator_token
-	 * @param list<ExpressionToken> $left
-	 * @param list<ExpressionToken> $right
-	 * @return list<ExpressionToken>|null
-	 */
-	private function processSubtraction(Parser $parser, OpcodeExpressionToken $operator_token, array $left, array $right) : ?array{
-		$filter = $this->multiplication_operation_matcher->matches(...);
-
-		// x - -y = x + y
-		$right_tree = Util::expressionTokenArrayToTree($parser, $right);
-		Util::flattenArray($right_tree, $filter);
-		foreach($right_tree as $index => $right_operand){
-			if($right_operand instanceof NumericLiteralExpressionToken && $right_operand->value < 0){
-				$right_tree[$index] = new NumericLiteralExpressionToken($right_operand->getPos(), -$right_operand->value);
-				return [
-					...$left,
-					...$this->flattened($right_tree),
-					$this->buildOpcodeToken($parser, $operator_token->getPos(), OpcodeToken::OP_BINARY_ADD)
-				];
-			}
-		}
-
-		return null;
 	}
 
 	/**

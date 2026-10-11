@@ -16,6 +16,8 @@ The default parser no longer registers `ReorderExpressionOptimizer`. A commutati
 
 Subtraction with a negative left operand now keeps its original grouping. Rewriting `(-1) - x` as a negated sum promoted the result from an integer to a float when `x` was `PHP_INT_MAX`.
 
+Addition and subtraction with a negative right operand also keep their original operators. Rewriting `x + (-y)` as `x - y`, or `x - (-y)` as `x + y`, changed the result type and value when `y` was `PHP_INT_MIN`.
+
 Nested `min()` and `max()` calls also retain their argument order and grouping. Flattening them changed results when an argument was NaN, because PHP's comparison behavior for NaN depends on evaluation order.
 
 `sqrt()` now calls PHP's square-root function directly. Rewriting it as exponentiation changed the sign of negative zero.
