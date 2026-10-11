@@ -45,6 +45,12 @@ final class ParserTest extends TestCase{
 		self::assertEquals($vars["y"] + $vars["x"] + ($vars["c"] * -$vars["w"]) / 2, $expression->evaluate($vars));
 	}
 
+	public function testDeeplyNestedParenthesesKeepExpressionSemantics() : void{
+		$expression = str_repeat("(", 64) . "1 + 2 * 3" . str_repeat(")", 64);
+		self::assertSame(7, $this->uo_parser->parse($expression)->evaluate());
+		self::assertSame(7, $this->parser->parse($expression)->evaluate());
+	}
+
 	public function testBinaryOperatorsOfSamePrecedence() : void{
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage("Cannot process operators with same precedence (128) but different assignment types (0, 1)");
